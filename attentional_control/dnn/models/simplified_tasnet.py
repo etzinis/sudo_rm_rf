@@ -54,8 +54,8 @@ class TDCN(nn.Module):
         ])
 
         # Norm before the rest, and apply one more dense layer
-        # self.ln = GlobalLayerNorm(N)
-        self.ln = nn.BatchNorm1d(N)
+        self.ln = GlobalLayerNorm(N)
+        # self.ln = nn.BatchNorm1d(N)
         self.l1 = nn.Conv1d(in_channels=N, out_channels=B, kernel_size=1)
 
         # Separation module
@@ -81,7 +81,8 @@ class TDCN(nn.Module):
                                      output_padding=(L // 2) - 1, kernel_size=L,
                                      stride=L // 2, padding=L // 2,
                                      groups=S)
-        self.ln_mask_in = nn.BatchNorm1d(self.N)
+        # self.ln_mask_in = nn.BatchNorm1d(self.N)
+        self.ln_mask_in = GlobalLayerNorm(self.N)
 
     # Forward pass
     def forward(self, x):
