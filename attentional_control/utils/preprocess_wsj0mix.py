@@ -139,11 +139,14 @@ def write_data_wrapper_func(input_dirpath,
             padded_sources_wavs = torch.zeros(sources_wavs.shape[0],
                                               max_wav_samples)
             padded_mix_wav[:mix_wav.shape[-1]] = mix_wav
-            padded_sources_wavs[:, :sources_wavs.shape[-1]] = mix_wav
+            padded_sources_wavs[
+                :, :min(max_wav_samples, sources_wavs.shape[-1])] = \
+                sources_wavs[:, :min(max_wav_samples, sources_wavs.shape[-1])]
             mix_wav = padded_mix_wav
             sources_wavs = padded_sources_wavs
 
         mix_wav = mix_wav[:max_wav_samples]
+        sources_wavs = sources_wavs[:, :max_wav_samples]
         mix_std = mix_wav.detach().cpu().numpy().std()
         mix_wav_norm = torch.tensor(normalize_wav(mix_wav),
                                     dtype=torch.float32)
@@ -151,7 +154,6 @@ def write_data_wrapper_func(input_dirpath,
                                                  std=mix_std)
 
         output_uid_folder = os.path.join(output_dirpath, uid)
-
         data = {
             'mixture_wav': mix_wav,
             'clean_sources_wavs': sources_wavs,
