@@ -7,11 +7,11 @@
 import argparse
 import os
 import sys
-import two_step_mask_learning.dnn.dataset_loader.torch_dataloader as dataloader
-import two_step_mask_learning.dnn.dataset_loader.augmented_mix_dataloader as \
-    augmented_dataloader
 
 sys.path.append('../../../../')
+import attentional_control.dnn.dataset_loader.torch_dataloader as dataloader
+import attentional_control.dnn.dataset_loader.augmented_mix_dataloader as \
+    augmented_dataloader
 from __config__ import WSJ_MIX_2_8K_PREPROCESSED_EVAL_P, \
     WSJ_MIX_2_8K_PREPROCESSED_TEST_P, WSJ_MIX_2_8K_PREPROCESSED_TRAIN_P
 from __config__ import WSJ_MIX_2_8K_PREPROCESSED_EVAL_PAD_P, \
