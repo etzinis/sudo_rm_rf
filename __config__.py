@@ -30,8 +30,8 @@ WSJ_MIX_2_8K_PREPROCESSED_TRAIN_PAD_P = os.path.join(WSJ0_MIX_2_8K_PREPROCESSED_
 WSJ_MIX_2_8K_PREPROCESSED_EVAL_PAD_P = os.path.join(WSJ0_MIX_2_8K_PREPROCESSED_MAX_BASE_P, 'cv')
 WSJ_MIX_2_8K_PREPROCESSED_TEST_PAD_P = os.path.join(WSJ0_MIX_2_8K_PREPROCESSED_MAX_BASE_P, 'tt')
 
-WSJ_MIX_HIERARCHICAL_P = '/mnt/data/hierarchical_sound_datasets/WSJ0_mix_partitioned/'
-ESC50_HIERARCHICAL_P = '/mnt/data/hierarchical_sound_datasets/ESC50_partitioned/'
+WSJ_MIX_HIERARCHICAL_P = '/mnt/nvme/hierarchical_sound_datasets/WSJ0_mix_partitioned/'
+ESC50_HIERARCHICAL_P = '/mnt/nvme/hierarchical_sound_datasets/ESC50_partitioned/'
 
 AFE_WSJ_MIX_2_8K = '/home/thymios/afes/min/'
 AFE_WSJ_MIX_2_8K_PAD = '/home/thymios/afes/pad/'
@@ -44,4 +44,4 @@ TNMASK_WSJ_MIX_2_8K_NORMPAD = '/home/thymios/tn_mask/norm_pad/'
 TNMASK_AUGMENTED = '/home/thymios/tn_mask/augmented/'
 
 
-API_KEY = 'your_comet_ml_key'
+API_KEY = '7arFX4aIzJWDNQIOt7St56uUs'
