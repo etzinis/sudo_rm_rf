@@ -90,13 +90,13 @@ tr_val_losses = dict([
 
 model = attention_separator.SelfAttentionEncoder(
     input_timesamples=hparams['in_samples'],
-    n_head=8,
-    n_layers=5,
-    dim_feedforward=2**9,
+    n_head=4,
+    n_layers=3,
+    dim_feedforward=2**11,
     n_basis=hparams['n_basis'],
     kernel_size=hparams['n_kernel'],
     n_sources=2,
-    dropout=0.0, activation="relu"
+    dropout=0., activation="relu"
 )
 
 # if hparams['tasnet_type'] == 'simple':
@@ -158,10 +158,10 @@ for i in range(hparams['n_epochs']):
     res_dic = {}
     for loss_name in all_losses:
         res_dic[loss_name] = {'mean': 0., 'std': 0., 'acc': []}
-    # print("Experiment: {} - {} || Epoch: {}/{}".format(experiment.get_key(),
-    #                                                    experiment.get_tags(),
-    #                                                    i+1,
-    #                                                    hparams['n_epochs']))
+    print("Experiment: {} - {} || Epoch: {}/{}".format(experiment.get_key(),
+                                                       experiment.get_tags(),
+                                                       i+1,
+                                                       hparams['n_epochs']))
     model.train()
 
     for data in tqdm(train_gen, desc='Training'):

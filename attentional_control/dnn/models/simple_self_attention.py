@@ -57,10 +57,11 @@ class SelfAttentionEncoder(nn.Module):
 
         # # Masks layer
         # # Hmmmm maybe a linear layer here would be better
-        self.reshape_before_masks = nn.Conv2d(in_channels=1,
-                                              out_channels=n_sources,
-                                              kernel_size=(n_basis + 1, 1),
-                                              padding=(n_basis - n_basis // 2, 0))
+        # self.reshape_before_masks = nn.Conv2d(in_channels=1,
+        #                                       out_channels=n_sources,
+        #                                       kernel_size=(n_basis + 1, 1),
+        #                                       padding=(n_basis - n_basis // 2, 0))
+        # self.reshape_before_masks = nn.Linear(n_basis, n_basis * n_sources)
 
         # Back end
         self.be = nn.ConvTranspose1d(in_channels=n_basis*n_sources,
@@ -72,7 +73,7 @@ class SelfAttentionEncoder(nn.Module):
                                      groups=n_sources)
         # self.ln_mask_in = nn.BatchNorm1d(self.N)
         # self.ln_mask_in = GlobalLayerNorm(n_sources)
-        self.ln_mask_in = nn.LayerNorm([self.N, self.timesteps])
+        # self.ln_mask_in = nn.LayerNorm([self.N, self.timesteps])
 
     def forward(self, x):
         # Front end
@@ -87,16 +88,21 @@ class SelfAttentionEncoder(nn.Module):
         # x = self.l1(x)
         # print(x.shape)
         x = self.transformer_encoder(x.permute(2, 0, 1)).permute(1, 2, 0)
-        # print(x.shape)
 
-        x = self.reshape_before_masks(x.unsqueeze(1))
+        # x = self.reshape_before_masks(x.unsqueeze(1))
+        # x = self.reshape_before_masks(x.permute(0, 2, 1)).permute(0, 2, 1)
+        # # x = x.view(-1, 1, self.n_sources * self.N, self.timesteps)
+        # x = x.view(-1, self.n_sources, self.N, self.timesteps)
 
-        x = self.ln_mask_in(x)
-        x = nn.functional.relu(x)
+        # x = self.ln_mask_in(x)
+        # x = nn.functional.relu(x)
         if self.n_sources == 1:
             x = torch.sigmoid(x)
         else:
-            x = nn.functional.softmax(x, dim=1)
+            # x = nn.functional.softmax(x, dim=1)
+            x = torch.sigmoid(x.unsqueeze(1))
+            sec_mask = (1. - x)
+            x = torch.cat((x, sec_mask), 1)
         x = x * s.unsqueeze(1)
 
         return self.be(x.view(x.shape[0], -1, x.shape[-1]))
