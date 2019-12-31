@@ -114,9 +114,25 @@ for f in model.parameters():
     if f.requires_grad:
         numparams += f.numel()
 experiment.log_parameter('Parameters', numparams)
+print('Trainable Parameters: {}'.format(numparams))
+
 
 model = torch.nn.DataParallel(model).cuda()
-opt = torch.optim.Adam(model.parameters(), lr=hparams['learning_rate'])
+
+if 1:
+    opt = torch.optim.Adam(model.parameters(), lr=hparams['learning_rate'])
+else:
+    import pytorch_warmup as warmup
+    opt = torch.optim.AdamW(model.parameters(),
+                            lr=hparams['learning_rate'],
+                            betas=(0.9, 0.999),
+                            weight_decay=0.01)
+    num_steps = len(train_gen) * hparams['n_epochs']
+    lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        opt, T_max=num_steps)
+    # warmup_scheduler = warmup.UntunedLinearWarmup(opt)
+    warmup_scheduler = warmup.RAdamWarmup(opt)
+
 all_losses = [back_loss_tr_loss_name] + \
              [k for k in sorted(val_losses.keys())] + \
              [k for k in sorted(tr_val_losses.keys())]
@@ -145,6 +161,9 @@ for i in range(hparams['n_epochs']):
                               initial_mixtures=m1wavs)
         l.backward()
         opt.step()
+        if 0:
+            lr_scheduler.step()
+            warmup_scheduler.dampen()
         res_dic[back_loss_tr_loss_name]['acc'].append(l.item())
     tr_step += 1
 
