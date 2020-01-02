@@ -182,13 +182,13 @@ for i in range(hparams['n_epochs']):
         res_dic[back_loss_tr_loss_name]['acc'].append(l.item())
         # print(np.mean(res_dic[back_loss_tr_loss_name]['acc']))
         #
-        # if hparams['reduce_lr_every'] > 0:
-        #     if tr_step % hparams['reduce_lr_every'] == 0:
-        #         new_lr = (hparams['learning_rate']
-        #                   / (hparams['divide_lr_by'] ** (tr_step // hparams['reduce_lr_every'])))
-        #         print('Reducing Learning rate to: {}'.format(new_lr))
-        #         for param_group in opt.param_groups:
-        #             param_group['lr'] = new_lr
+        if hparams['reduce_lr_every'] > 0:
+            if tr_step % hparams['reduce_lr_every'] == 0:
+                new_lr = (hparams['learning_rate']
+                          / (hparams['divide_lr_by'] ** (tr_step // hparams['reduce_lr_every'])))
+                print('Reducing Learning rate to: {}'.format(new_lr))
+                for param_group in opt.param_groups:
+                    param_group['lr'] = new_lr
     tr_step += 1
 
     if val_gen is not None:
