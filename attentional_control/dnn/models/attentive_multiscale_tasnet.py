@@ -106,7 +106,6 @@ class TDCN(nn.Module):
         x = self.l1(x)
 
         accum_output = []
-        gathering_outputs = False
 
         # do the forward path and also accumulate all scales representations
         for block in self.sm:
@@ -114,8 +113,6 @@ class TDCN(nn.Module):
             accum_output.append(interm_out)
 
         x = torch.cat(accum_output, dim=1)
-        print('MOUNO')
-        print(x.shape)
 
         if self.B * self.R * self.X != self.N:
             # x = self.ln_bef_out_reshape(x)
