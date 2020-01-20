@@ -18,6 +18,7 @@ import joblib
 import librosa
 from scipy.io import wavfile
 import torch
+import csv
 from tqdm import tqdm
 import shutil
 
@@ -26,87 +27,6 @@ import attentional_control.utils.progress_display as progress_display
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-
-
-def parse_info_from_name(preprocessed_dirname):
-    """! Given a name of a preprocessed dataset root dirname infer all the
-    encoded information
-
-    Args:
-        preprocessed_dirname: A dirname as the one follows:
-        wsj0_2mix_8k_4s_min_preprocessed or even a dirpath
-
-    Returns:
-        min_or_max: String whether the mixtures are aligned with the maximum
-        or the minimum number of samples of the constituting sources
-        n_speakers: number of speakers in mixtures
-        fs: sampling rate in kHz
-        wav_timelength: The timelength in seconds of all the mixtures and
-                        clean sources
-    """
-    try:
-        dirname = os.path.basename(preprocessed_dirname)
-        elements = dirname.split('_')
-        min_or_max = elements[-2]
-        assert (min_or_max == 'min' or min_or_max == 'max')
-        wav_timelength = float(elements[-3][:-1])
-        fs = float(elements[-4][:-1]) * 1000
-        n_speakers = int(elements[-5].strip("mix"))
-
-        return min_or_max, n_speakers, fs, wav_timelength
-
-    except:
-        raise IOError("The structure of the wsj0-mix preprocessed "
-                      "dataset name is not in the proper format. A proper "
-                      "format would be: "
-                      "wsj0_{number of speakers}mix_{fs}k_{timelength}s_{min "
-                      "or max}_preprocessed")
-
-
-def infer_output_name(input_dirpath, wav_timelength):
-    """! Infer the name for the output folder as shown in the example: E.g.
-    for input_dirpath: wsj0-mix/2speakers/wav8k/min and for 4s timelength it
-    would be wsj0_2mix_8k_4s_min_preprocessed
-
-    Args: input_dirpath: The path of a wsj0mix dataset e.g.
-                         wsj0-mix/2speakers/wav8k/min (for mixes with minimum
-                         length)
-          wav_timelength: The timelength in seconds of all the mixtures and
-                          clean sources
-
-    Returns: outputname: as specified in string format
-             fs: sampling rate in Hz
-             n_speakers: number of speakers in mixtures
-    """
-
-    try:
-        elements = input_dirpath.lower().split('/')
-        min_or_max = elements[-1]
-        assert (min_or_max == 'min' or min_or_max == 'max')
-        fs = int(elements[-2].strip('wav').strip('k')) * 1000
-        n_speakers = int(elements[-3].strip("speakers"))
-        output_name = "wsj0_{}mix_{}k_{}s_{}_hierarchical".format(
-            n_speakers,
-            fs / 1000.,
-            float(wav_timelength),
-            min_or_max)
-
-        # test that the inferred output name is parsable back
-        (inf_min_or_max,
-         inf_n_speakers,
-         inf_fs,
-         inf_wav_timelength) = parse_info_from_name(output_name)
-        assert(inf_min_or_max == min_or_max and
-               inf_n_speakers == n_speakers and
-               inf_fs == fs and
-               inf_wav_timelength == wav_timelength)
-
-        return output_name, fs, n_speakers, min_or_max
-
-    except:
-        raise IOError("The structure of the wsj0-mix is not in the right "
-                "format. A proper format would be: "
-                "wsj0-mix/{2 or 3}speakers/wav{fs in Hz}k/{min or max}")
 
 
 def normalize_wav(wav, eps=10e-7, std=None):
@@ -119,7 +39,8 @@ def normalize_wav(wav, eps=10e-7, std=None):
 def write_data_wrapper_func(audio_files_dir,
                             sound_classes,
                             min_wav_timelength,
-                            output_dirpath):
+                            output_dirpath,
+                            metadata_dict):
     min_wav_samples = int(8000 * min_wav_timelength)
 
     def process_uid(uid):
@@ -144,6 +65,16 @@ def write_data_wrapper_func(audio_files_dir,
             'wav_norm': norm_wav,
         }
 
+        # Append metadata to the written data
+        for meta_label, meta_label_val in metadata_dict[uid].items():
+            if meta_label in data:
+                raise IndexError('Trying to override essential '
+                                 'information about files by '
+                                 'assigning metalabel: {} in data '
+                                 'dictionary: {}'.format(meta_label,
+                                                         data))
+            data[meta_label] = meta_label_val
+
         if not os.path.exists(output_uid_folder):
             os.makedirs(output_uid_folder)
 
@@ -152,6 +83,26 @@ def write_data_wrapper_func(audio_files_dir,
             joblib.dump(v, file_path, compress=0)
 
     return lambda uid: process_uid(uid)
+
+
+def getMetaDataDict(meta_csv_filepath):
+    try:
+        meta_data_dict = {}
+        with open(meta_csv_filepath) as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                meta_data_dict[row['filename']] = {
+                    'fold': torch.tensor(int(row['fold']),
+                                         dtype=torch.int32),
+                    'class_id': torch.tensor(int(row['target']),
+                                             dtype=torch.int32),
+                    'human_readable_class': row['category'],
+                    'source_file': row['src_file']
+                }
+            return meta_data_dict
+    except Exception as e:
+        print('Failed at loading metadata for ESC-50 dataset')
+        raise e
 
 
 def convert_ESC50_to_hierarchical_dataset(input_dirpath,
@@ -176,7 +127,19 @@ def convert_ESC50_to_hierarchical_dataset(input_dirpath,
 
     audio_files_dir = os.path.join(input_dirpath, 'audio')
     files = glob(audio_files_dir + '/*.wav')
+    if not files:
+        raise IOError('Selected folder: {} does not contain any wav '
+                      'file.'.format(audio_files_dir))
+
+    meta_csv_filepath = os.path.join(input_dirpath, 'meta/esc50.csv')
+    metadata_dict = getMetaDataDict(meta_csv_filepath)
+
     unique_ids = set([os.path.basename(f) for f in files])
+
+    for x in unique_ids:
+        if x not in metadata_dict:
+            raise IndexError('Metadata for file: {} not parsed '
+                             'correctly!'.format(x))
 
     sound_classes = set([u.split('-')[-1].split('.wav')[0]
                          for u in unique_ids])
@@ -184,7 +147,8 @@ def convert_ESC50_to_hierarchical_dataset(input_dirpath,
     write_data_func = write_data_wrapper_func(audio_files_dir,
                                               sound_classes,
                                               wav_timelength,
-                                              output_dirpath)
+                                              output_dirpath,
+                                              metadata_dict)
 
     progress_display.progress_bar_wrapper(
         write_data_func,
@@ -247,9 +211,9 @@ def example_of_usage():
     partioned_dataset_dirpath = \
         '/mnt/data/hierarchical_sound_datasets/ESC50_partitioned'
     wav_timelength = 4
-    # convert_ESC50_to_hierarchical_dataset(input_dirpath,
-    #                                       output_dirpath,
-    #                                       wav_timelength)
+    convert_ESC50_to_hierarchical_dataset(input_dirpath,
+                                          output_dirpath,
+                                          wav_timelength)
     partition_dataset(output_dirpath,
                       partioned_dataset_dirpath)
 
