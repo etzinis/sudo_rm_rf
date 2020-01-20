@@ -24,9 +24,7 @@ import shutil
 
 import attentional_control.utils.progress_display as progress_display
 
-import time
-import numpy as np
-import matplotlib.pyplot as plt
+from __config__ import ESC50_DOWNLOADED_P, ESC50_HIERARCHICAL_P
 
 
 def normalize_wav(wav, eps=10e-7, std=None):
@@ -206,15 +204,14 @@ def partition_dataset(hier_dataset_dirpath,
 
 
 def example_of_usage():
-    input_dirpath = '/mnt/data/hierarchical_sound_datasets/ESC-50-master'
-    output_dirpath = '/mnt/data/hierarchical_sound_datasets/ESC-50'
-    partioned_dataset_dirpath = \
-        '/mnt/data/hierarchical_sound_datasets/ESC50_partitioned'
+    input_dirpath = ESC50_DOWNLOADED_P
+    temp_dirpath = '/tmp/ESC-50'
+    partioned_dataset_dirpath = ESC50_HIERARCHICAL_P
     wav_timelength = 4
     convert_ESC50_to_hierarchical_dataset(input_dirpath,
-                                          output_dirpath,
+                                          temp_dirpath,
                                           wav_timelength)
-    partition_dataset(output_dirpath,
+    partition_dataset(temp_dirpath,
                       partioned_dataset_dirpath)
 
 if __name__ == "__main__":

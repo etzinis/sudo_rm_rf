@@ -30,6 +30,8 @@ WSJ_MIX_2_8K_PREPROCESSED_TRAIN_PAD_P = os.path.join(WSJ0_MIX_2_8K_PREPROCESSED_
 WSJ_MIX_2_8K_PREPROCESSED_EVAL_PAD_P = os.path.join(WSJ0_MIX_2_8K_PREPROCESSED_MAX_BASE_P, 'cv')
 WSJ_MIX_2_8K_PREPROCESSED_TEST_PAD_P = os.path.join(WSJ0_MIX_2_8K_PREPROCESSED_MAX_BASE_P, 'tt')
 
+ESC50_DOWNLOADED_P = '/mnt/data/hierarchical_sound_datasets/ESC-50-master'
+
 WSJ_MIX_HIERARCHICAL_P = '/mnt/nvme/hierarchical_sound_datasets/WSJ0_mix_partitioned/'
 ESC50_HIERARCHICAL_P = '/mnt/nvme/hierarchical_sound_datasets/ESC50_partitioned/'
 
