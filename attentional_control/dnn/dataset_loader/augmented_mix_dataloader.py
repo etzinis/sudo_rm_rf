@@ -107,10 +107,16 @@ class AugmentedOnlineMixingDataset(Dataset):
             extra_lambda_checks=
             [lambda x: x <= self.n_samples])
 
+        # First will be returned the mixture and the source
         self.return_items = self.get_arg_and_check_validness(
             'return_items',
             known_type=list,
-            choices=['wav'])
+            choices=['wav', 'fold', 'class_id',
+                     'human_readable_class', 'source_file'],
+            extra_lambda_checks=
+            [lambda x: x[0] == 'wav' or x[0] == 'wav_norm',
+             lambda x: not('wav' in x and 'wav_norm' in x)]
+        )
 
         self.n_batches = int(self.n_samples / self.batch_size)
 
@@ -338,7 +344,13 @@ class AugmentedOnlineMixingDataset(Dataset):
         returning_mixture = (mixture_tensor / (mixture_std + 10e-8)).squeeze()
         returning_sources = clean_sources_tensor / (mixture_std + 10e-8)
 
-        return returning_mixture, returning_sources
+        if len(self.return_items) > 1:
+            extra_files = [
+                self.load_item_file(os.path.join(item_folder, file))
+                for file in self.return_items[1:]]
+            return [returning_mixture, returning_sources] + extra_files
+        else:
+            return returning_mixture, returning_sources
 
 
 def get_args():
@@ -455,7 +467,7 @@ def test_truly_random_generator():
     data_loader = AugmentedOnlineMixingDataset(**vars(these_args))
     gen = get_data_gen_from_loader(data_loader)
 
-    for mixture, sources in gen:
+    for mixture, sources,  in gen:
         prev_mix_wav = mixture.squeeze()
         prev_s1_wav = sources.squeeze()[0]
         prev_s2_wav = sources.squeeze()[1]
@@ -471,7 +483,34 @@ def test_truly_random_generator():
                 raise ValueError('Dataset generator is not truly random')
 
 
+def test_metadata_loading():
+    ESC50_HIERARCHICAL_P = \
+        '/mnt/data/hierarchical_sound_datasets/ESC50_partitioned/train'
+    these_args = argparse.Namespace(
+        input_dataset_p=[ESC50_HIERARCHICAL_P],
+        datasets_priors=[1.],
+        batch_size=3,
+        n_jobs=4,
+        n_samples=4,
+        return_items=['wav', 'fold', 'class_id',
+                      'human_readable_class', 'source_file'],
+        fs=8000.,
+        selected_timelength=4.,
+        n_sources=2,
+        max_abs_snr=2.5,
+        fixed_seed=0
+    )
+
+    data_loader = AugmentedOnlineMixingDataset(**vars(these_args))
+    gen = get_data_gen_from_loader(data_loader)
+
+    for data in gen:
+        for i in range(4):
+            assert type(data[i]) == torch.Tensor
+
+
 if __name__ == "__main__":
     # pytorch_dataloader_args = get_args()
     # example_of_usage(pytorch_dataloader_args)
-    test_truly_random_generator()
+    # test_truly_random_generator()
+    test_metadata_loading()
