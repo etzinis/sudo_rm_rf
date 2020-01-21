@@ -22,6 +22,7 @@ root_dir = os.path.abspath(os.path.join(current_dir, '../../../'))
 sys.path.append(root_dir)
 
 from torch.utils.data import Dataset, DataLoader
+from __config__ import ESC50_DOWNLOADED_P, ESC50_HIERARCHICAL_P, WSJ_MIX_HIERARCHICAL_P
 
 
 class AugmentedOnlineMixingDataset(Dataset):
@@ -448,10 +449,9 @@ def example_of_usage(pytorch_dataloader_args):
 
 
 def test_truly_random_generator():
-    WSJ_MIX_HIERARCHICAL_P = '/mnt/nvme/hierarchical_sound_datasets/WSJ0_mix_partitioned/train'
-    ESC50_HIERARCHICAL_P = '/mnt/nvme/hierarchical_sound_datasets/ESC50_partitioned/train'
     these_args = argparse.Namespace(
-        input_dataset_p=[WSJ_MIX_HIERARCHICAL_P, ESC50_HIERARCHICAL_P],
+        input_dataset_p=[os.path.join(WSJ_MIX_HIERARCHICAL_P, 'train'),
+                         os.path.join(ESC50_HIERARCHICAL_P, 'train')],
         datasets_priors=[0.5, 0.5],
         batch_size=1,
         n_jobs=4,
@@ -484,10 +484,8 @@ def test_truly_random_generator():
 
 
 def test_metadata_loading():
-    ESC50_HIERARCHICAL_P = \
-        '/mnt/data/hierarchical_sound_datasets/ESC50_partitioned/train'
     these_args = argparse.Namespace(
-        input_dataset_p=[ESC50_HIERARCHICAL_P],
+        input_dataset_p=[os.path.join(ESC50_HIERARCHICAL_P, 'train')],
         datasets_priors=[1.],
         batch_size=3,
         n_jobs=4,
@@ -512,5 +510,5 @@ def test_metadata_loading():
 if __name__ == "__main__":
     # pytorch_dataloader_args = get_args()
     # example_of_usage(pytorch_dataloader_args)
-    # test_truly_random_generator()
+    test_truly_random_generator()
     test_metadata_loading()
