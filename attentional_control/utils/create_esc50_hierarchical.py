@@ -153,9 +153,6 @@ def convert_ESC50_to_hierarchical_dataset(input_dirpath,
         list(unique_ids),
         message='Processing {} files...'.format(len(unique_ids)))
 
-    print("Dataset ready at: {}".format(output_dirpath))
-
-
 def copyDirectory(src, dest):
     try:
         shutil.copytree(src, dest)
@@ -201,6 +198,8 @@ def partition_dataset(hier_dataset_dirpath,
         for sample in samples_dict[folds_numbers[-1]][n_test_samples:]:
             out_dir = os.path.join(partitions_dirpath, 'val', class_name, sample)
             copyDirectory(os.path.join(class_path, sample), out_dir)
+
+    print("Partitioned Dataset ready at: {}".format(partitions_dirpath))
 
 
 def example_of_usage():
