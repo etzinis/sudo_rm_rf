@@ -144,6 +144,12 @@ def get_args():
                         help="""The type of Tasnet you want to run.""",
                         default="simplified", choices=['full', 'simplified'])
     # training params
+    parser.add_argument("--class_loss_weight", type=float,
+                        help="""The weight that classification loss 
+                        is going to be added with the separation 
+                        loss. 0 means that there would be no 
+                        classification loss.""",
+                        default=0.)
     parser.add_argument("-bs", "--batch_size", type=int,
                         help="""The number of samples in each batch. 
                             Warning: Cannot be less than the number of 
