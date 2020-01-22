@@ -41,5 +41,7 @@ def get_hparams_from_args(args):
         'divide_lr_by': args.divide_lr_by,
         'reduce_lr_every': args.reduce_lr_every,
         "fs": args.fs,
+        "optimizer": args.optimizer,
+        "clip_grad_norm": args.clip_grad_norm
     }
     return hparams

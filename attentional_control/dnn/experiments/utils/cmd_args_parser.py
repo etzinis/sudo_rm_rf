@@ -165,5 +165,14 @@ def get_args():
                         rate is not going to be divided by the 
                         specified factor.""",
                         default=0)
+    parser.add_argument("--optimizer", type=str,
+                        help="""The optimizer that you want to use""",
+                        default="adam",
+                        choices=['adam', 'radam'])
+    parser.add_argument("--clip_grad_norm", type=float,
+                        help="""The norm value which all gradients 
+                        are going to be clipped, 0 means that all 
+                        grads are not going to be clipped""",
+                        default=0.)
 
     return parser.parse_args()
