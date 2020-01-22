@@ -170,6 +170,13 @@ def update_hparams(hparams):
 
 
 def get_data_loaders(hparams):
+
+    # Augmented dataloader return items
+    if hparams['class_loss_weight'] != 0:
+        hparams['return_items'] = ['wav', 'class_id']
+    else:
+        hparams['return_items'] = ['wav']
+
     if isinstance(hparams['train_dataset_path'], str):
         train_gen = dataloader.get_data_generators(
             [hparams['train_dataset_path']], bs=hparams['bs'],
@@ -182,7 +189,7 @@ def get_data_loaders(hparams):
             batch_size=hparams['bs'],
             n_jobs=hparams['n_jobs'],
             n_samples=hparams['tr_get_top'],
-            return_items=['wav'],
+            return_items=hparams['return_items'],
             fs=hparams['fs'],
             selected_timelength=hparams['selected_timelength'],
             n_sources=hparams['n_sources'],
@@ -206,7 +213,7 @@ def get_data_loaders(hparams):
             batch_size=hparams['bs'],
             n_jobs=hparams['n_jobs'],
             n_samples=hparams['val_get_top'],
-            return_items=['wav'],
+            return_items=hparams['return_items'],
             fs=hparams['fs'],
             selected_timelength=hparams['selected_timelength'],
             n_sources=hparams['n_sources'],
@@ -232,7 +239,7 @@ def get_data_loaders(hparams):
             batch_size=hparams['bs'],
             n_jobs=hparams['n_jobs'],
             n_samples=hparams['val_get_top'],
-            return_items=['wav'],
+            return_items=hparams['return_items'],
             fs=hparams['fs'],
             selected_timelength=hparams['selected_timelength'],
             n_sources=hparams['n_sources'],
