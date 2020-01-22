@@ -104,9 +104,9 @@ print('Trainable Parameters: {}'.format(numparams))
 
 model = torch.nn.DataParallel(model).cuda()
 
-if 1:
+if hparams['optimizer'] == 'adam':
     opt = torch.optim.Adam(model.parameters(), lr=hparams['learning_rate'])
-else:
+elif hparams['optimizer'] == 'radam':
     import pytorch_warmup as warmup
     opt = torch.optim.AdamW(model.parameters(),
                             lr=hparams['learning_rate'],
@@ -117,6 +117,9 @@ else:
         opt, T_max=num_steps)
     # warmup_scheduler = warmup.UntunedLinearWarmup(opt)
     warmup_scheduler = warmup.RAdamWarmup(opt)
+else:
+    raise NotImplementedError('Optimizer: {} is not available!'.format(
+        hparams['optimizer']))
 
 all_losses = [back_loss_tr_loss_name] + \
              [k for k in sorted(val_losses.keys())] + \
@@ -144,9 +147,12 @@ for i in range(hparams['n_epochs']):
         l = back_loss_tr_loss(rec_sources_wavs,
                               clean_wavs,
                               initial_mixtures=m1wavs)
+        if hparams['clip_grad_norm'] > 0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(),
+                                           hparams['clip_grad_norm'])
         l.backward()
         opt.step()
-        if 0:
+        if hparams['optimizer'] == 'radam':
             lr_scheduler.step()
             warmup_scheduler.dampen()
         res_dic[back_loss_tr_loss_name]['acc'].append(l.item())
