@@ -292,6 +292,7 @@ class AugmentedOnlineMixingDataset(Dataset):
         sources_wavs_l = []
         energies = []
         prev_indexes = []
+        extra_files = []
 
         # Select with a prior probability between the list of datasets
         for source_idx in range(self.n_sources):
@@ -327,6 +328,16 @@ class AugmentedOnlineMixingDataset(Dataset):
             energies.append(torch.sqrt(torch.sum(delayed_source_tensor ** 2)))
             sources_wavs_l.append(delayed_source_tensor)
 
+            if len(self.return_items) > 1:
+                if len(extra_files) == 0:
+                    extra_files = [
+                        [self.load_item_file(os.path.join(item_folder, file))]
+                        for file in self.return_items[1:]]
+                else:
+                    for j, file in enumerate(self.return_items[1:]):
+                        extra_files[j].append(
+                            self.load_item_file(os.path.join(item_folder, file)))
+
         snr_ratio = self.get_snr_ratio(mixture_idx, 0)
         new_energy_ratio = np.sqrt(np.power(10., snr_ratio / 10.))
 
@@ -346,9 +357,10 @@ class AugmentedOnlineMixingDataset(Dataset):
         returning_sources = clean_sources_tensor / (mixture_std + 10e-8)
 
         if len(self.return_items) > 1:
-            extra_files = [
-                self.load_item_file(os.path.join(item_folder, file))
-                for file in self.return_items[1:]]
+            # preprocess exta files format for tensor data
+            for j, info in enumerate(extra_files):
+                if type(info[0]) == torch.Tensor:
+                    extra_files[j] = torch.stack(info)
             return [returning_mixture, returning_sources] + extra_files
         else:
             return returning_mixture, returning_sources
@@ -484,17 +496,19 @@ def test_truly_random_generator():
 
 
 def test_metadata_loading():
+    bs, n_samples, fs, timelength, n_sources = 2, 4, 8000., 4., 2
     these_args = argparse.Namespace(
         input_dataset_p=[os.path.join(ESC50_HIERARCHICAL_P, 'train')],
         datasets_priors=[1.],
-        batch_size=3,
+        batch_size=bs,
         n_jobs=4,
-        n_samples=4,
+        n_samples=n_samples,
+        # return_items=['wav'],
         return_items=['wav', 'fold', 'class_id',
                       'human_readable_class', 'source_file'],
-        fs=8000.,
+        fs=fs,
         selected_timelength=4.,
-        n_sources=2,
+        n_sources=n_sources,
         max_abs_snr=2.5,
         fixed_seed=0
     )
@@ -505,6 +519,12 @@ def test_metadata_loading():
     for data in gen:
         for i in range(4):
             assert type(data[i]) == torch.Tensor
+        assert data[0].shape == torch.Size([int(bs),
+                                            int(fs * timelength)])
+        assert data[1].shape == torch.Size([int(bs), int(n_sources),
+                                            int(fs * timelength)])
+        assert data[2].shape == torch.Size([int(bs), int(n_sources)])
+        assert data[3].shape == torch.Size([int(bs), int(n_sources)])
 
 
 if __name__ == "__main__":
