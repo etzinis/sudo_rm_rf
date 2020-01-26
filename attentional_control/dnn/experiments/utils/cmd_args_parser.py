@@ -51,7 +51,7 @@ def get_args():
                         default=['mixture_wav', 'clean_sources_wavs'],
                         choices=['mixture_wav',
                                  'clean_sources_wavs',
-                                 'mixture_wav_norm',
+                                 'mixture_wav_norm', 'wav', 'class_id',
                                  'clean_sources_wavs_norm'])
     parser.add_argument("-tags", "--cometml_tags", type=str,
                         nargs="+", help="""A list of tags for the cometml 
