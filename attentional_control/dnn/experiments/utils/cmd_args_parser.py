@@ -150,6 +150,11 @@ def get_args():
                         loss. 0 means that there would be no 
                         classification loss.""",
                         default=0.)
+    parser.add_argument("--n_classes", type=int,
+                        help="""The number of classes of sounds 
+                        that will be used.""",
+                        default=50)
+
     parser.add_argument("-bs", "--batch_size", type=int,
                         help="""The number of samples in each batch. 
                             Warning: Cannot be less than the number of 

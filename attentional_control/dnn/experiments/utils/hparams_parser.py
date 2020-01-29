@@ -43,6 +43,7 @@ def get_hparams_from_args(args):
         "fs": args.fs,
         "optimizer": args.optimizer,
         "clip_grad_norm": args.clip_grad_norm,
-        "class_loss_weight": args.class_loss_weight
+        "class_loss_weight": args.class_loss_weight,
+        "n_classes": args.n_classes
     }
     return hparams
