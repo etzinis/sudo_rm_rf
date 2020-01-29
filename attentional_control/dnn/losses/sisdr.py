@@ -87,6 +87,7 @@ class PermInvariantSISDR(nn.Module):
         self.backward_loss = backward_loss
         self.permutations = list(itertools.permutations(
             torch.arange(n_sources)))
+        self.permutations_tensor = torch.LongTensor(self.permutations)
         self.improvement = improvement
         self.n_sources = n_sources
         self.return_individual_results = return_individual_results
@@ -141,7 +142,7 @@ class PermInvariantSISDR(nn.Module):
                                                  t_t_diag, eps=eps)
             sisnr_l.append(sisnr)
         all_sisnrs = torch.cat(sisnr_l, -1)
-        best_sisdr = torch.max(all_sisnrs.mean(-2), -1)[0]
+        best_sisdr, best_perm_ind = torch.max(all_sisnrs.mean(-2), -1)
 
         if self.improvement:
             initial_mix = initial_mixtures.repeat(1, self.n_sources, 1)
@@ -154,14 +155,15 @@ class PermInvariantSISDR(nn.Module):
             best_sisdr = best_sisdr.mean()
 
         if self.backward_loss:
-            return - best_sisdr
-        return best_sisdr
+            return -best_sisdr, best_perm_ind
+        return best_sisdr, best_perm_ind
 
     def forward(self,
                 pr_batch,
                 t_batch,
                 eps=1e-9,
-                initial_mixtures=None):
+                initial_mixtures=None,
+                return_best_permutation=False):
         """!
         :param pr_batch: Reconstructed wavs: Torch Tensors of size:
                          batch_size x self.n_sources x length_of_wavs
@@ -178,9 +180,12 @@ class PermInvariantSISDR(nn.Module):
         pr_batch, t_batch, initial_mixtures = self.normalize_input(
             pr_batch, t_batch, initial_mixtures=initial_mixtures)
 
-        sisnr_l = self.compute_sisnr(pr_batch,
-                                     t_batch,
-                                     eps=eps,
-                                     initial_mixtures=initial_mixtures)
+        sisnr_l, best_perm_ind = self.compute_sisnr(
+            pr_batch, t_batch, eps=eps,
+            initial_mixtures=initial_mixtures)
 
-        return sisnr_l
+        if return_best_permutation:
+            best_permutations = self.permutations_tensor[best_perm_ind]
+            return sisnr_l, best_permutations
+        else:
+            return sisnr_l
