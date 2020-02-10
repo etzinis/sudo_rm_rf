@@ -209,8 +209,10 @@ class TDCN(nn.Module):
         # do the forward path and also accumulate all scales representations
         for block in self.sm:
             x, interm_out = block(x)
-            accum_skip.append(interm_out)
-            accum_outs.append(x)
+            # accum_skip.append(interm_out)
+            # accum_outs.append(x)
+            accum_outs.append(interm_out)
+            accum_skip.append(x)
 
         # final_hidden = x.clone()
         x = torch.stack(accum_skip, dim=1)
