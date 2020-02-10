@@ -29,8 +29,11 @@ def log_metrics(metrics_dict, dirpath, tr_step, val_step):
 
         values = metric_data['acc']
         values = np.array(values)
-        if 'tr' in metric_name:
+        if metric_name.startswith('tr_'):
             filename = 'epoch_{}'.format(tr_step)
-        else:
+        elif metric_name.startswith('val_'):
             filename = 'epoch_{}'.format(val_step)
+        else:
+            NotImplementedError('I am not sure where to put this '
+                                'metric: {}'.format(metric_name))
         np.save(os.path.join(this_metric_folder, filename), values)
