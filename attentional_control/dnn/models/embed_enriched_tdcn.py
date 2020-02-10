@@ -94,14 +94,22 @@ class TDCN(nn.Module):
         # self.attn = Attention((64000 // (self.L-1)))
 
         self.embedding_network = nn.ModuleList([
-            # nn.LayerNorm(),
-            nn.PReLU(),
+            nn.LeakyReLU(),
+            # nn.LayerNorm([X * R, B, (64000 // (self.L-1))]),
+            # nn.LayerNorm([X * R, B, 1]),
             nn.Conv2d(in_channels=X * R,
                       out_channels=1,
-                      kernel_size=1)]
-        )
+                      kernel_size=1),
+            nn.LeakyReLU(),
+            # nn.LayerNorm([1, B, (64000 // (self.L - 1))]),
+            nn.Conv2d(in_channels=1,
+                      out_channels=1,
+                      kernel_size=(B, 1)),
+            nn.LeakyReLU(),
+            nn.LayerNorm([1, 1, (64000 // (self.L - 1))]),
+        ])
 
-        self.logits_layer = nn.Linear(self.N * (64000 // (self.L-1)), 50)
+        self.logits_layer = nn.Linear((64000 // (self.L-1)), 50)
 
         # # Masks layer
         # self.m2 = nn.Conv2d(in_channels=1,
@@ -149,7 +157,6 @@ class TDCN(nn.Module):
         x = final_masks * s.unsqueeze(1)
         del s
 
-        logits = None
         if return_logits:
             # apply masks to all multi-scale maps
             sources_logits = []
@@ -160,6 +167,12 @@ class TDCN(nn.Module):
                     self.logits_layer(source_embedding.view(
                         source_embedding.shape[0], -1)))
             logits = torch.stack(sources_logits, dim=1)
+
+            # # Just use the full multi-scale features as logits
+            # sources_embeddings = self.get_source_embedding(
+            #     multi_scale_maps)
+            # logits = self.logits_layer(sources_embeddings.view(
+            #     sources_embeddings.shape[0], -1))
 
             return self.be(x.view(x.shape[0], -1, x.shape[-1])), logits
         else:
@@ -367,8 +380,8 @@ if __name__ == "__main__":
         B=256,
         P=3,
         H=512,
-        R=2,
-        X=4,
+        R=3,
+        X=8,
         S=2,
         L=21,
         N=256)
