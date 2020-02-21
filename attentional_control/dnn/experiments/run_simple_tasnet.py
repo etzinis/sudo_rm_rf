@@ -61,7 +61,7 @@ back_loss_tr_loss_name, back_loss_tr_loss = (
     'tr_back_loss_SISDRi',
     sisdr_lib.PermInvariantSISDR(batch_size=hparams['bs'],
                                  n_sources=hparams['n_sources'],
-                                 zero_mean=False,
+                                 zero_mean=True,
                                  backward_loss=True,
                                  improvement=True))
 
@@ -160,6 +160,10 @@ for i in range(hparams['n_epochs']):
                               clean_wavs,
                               initial_mixtures=m1wavs)
         l.backward()
+
+        if hparams['clip_grad_norm'] > 0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(),
+                                           hparams['clip_grad_norm'])
         opt.step()
         if 0:
             lr_scheduler.step()
