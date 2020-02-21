@@ -8,9 +8,120 @@ label information.
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import os
 import glob2
 import datetime
+import numpy as np
+
+
+class SeparableConvBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, time_dim):
+        super(SeparableConvBlock, self).__init__()
+
+        self.modules_separable = nn.ModuleList([
+            nn.Conv1d(in_channels=in_channels,
+                      out_channels=out_channels, kernel_size=1),
+            nn.LeakyReLU(),
+            GlobalLayerNorm(out_channels),
+            nn.Conv1d(in_channels=out_channels,
+                      out_channels=out_channels, kernel_size=3,
+                      groups=out_channels),
+            nn.LeakyReLU(),
+            GlobalLayerNorm(out_channels),
+            # nn.BatchNorm1d(H),
+            nn.Conv1d(in_channels=out_channels,
+                      out_channels=in_channels, kernel_size=1),
+        ])
+
+        # self.modules_separable = nn.ModuleList([
+        #     nn.Conv1d(in_channels=in_channels,
+        #               out_channels=out_channels, kernel_size=1),
+        #     nn.LeakyReLU(),
+        #     # GlobalLayerNorm(out_channels),
+        #     nn.LayerNorm(time_dim),
+        #     nn.Conv2d(in_channels=out_channels,
+        #               out_channels=out_channels,
+        #               kernel_size=(3, 3), padding=1,
+        #               groups=out_channels),
+        #     nn.LeakyReLU(),
+        #     nn.LayerNorm(time_dim),
+        #     # GlobalLayerNorm(out_channels),
+        #     nn.Conv2d(in_channels=out_channels,
+        #               out_channels=out_channels, kernel_size=(1, 1)),
+        # ])
+
+    def forward(self, x):
+        y = x.clone()
+        for layer in self.modules_separable:
+            y = layer(y.squeeze())
+        return F.avg_pool2d(y, kernel_size=(1, 2))
+
+
+class ClassificationNet(nn.Module):
+    def __init__(self, input_dimensions=None, num_classes=None,
+                 model_type='simplest'):
+        # Get some logits for a number of classes for the input
+        # representation
+        super(ClassificationNet, self).__init__()
+        self.in_dims = input_dimensions
+        assert len(self.in_dims) == 3, 'Input should be a 3d tensor.'
+        assert all([isinstance(o, int) for o in self.in_dims])
+        self.num_classes = num_classes
+
+        if model_type == 'simplest':
+            self.embedding_network = nn.ModuleList([
+                nn.LeakyReLU(),
+                # nn.LayerNorm([X * R, B, (64000 // (self.L-1))]),
+                # nn.LayerNorm([X * R, B, 1]),
+                nn.Conv2d(in_channels=self.in_dims[0],
+                          out_channels=1,
+                          kernel_size=1),
+                nn.LeakyReLU(),
+                # nn.LayerNorm([1, B, (64000 // (self.L - 1))]),
+                nn.Conv2d(in_channels=1,
+                          out_channels=1,
+                          kernel_size=(self.in_dims[1], 1)),
+                nn.LeakyReLU(),
+                nn.LayerNorm([1, 1, self.in_dims[2]]),
+            ])
+
+            self.logits_layer = nn.Linear(self.in_dims[2],
+                                          self.num_classes)
+        elif model_type == '2d_separable_pooling':
+            # Renormalize the input
+            self.input_norm = nn.LayerNorm(self.in_dims[:2])
+            self.embedding_network = nn.ModuleList(
+                [nn.Conv2d(in_channels=self.in_dims[0],
+                           out_channels=1,
+                           kernel_size=1),] +
+                # [SeparableConvBlock(self.in_dims[0] * 2 ** i,
+                #                     self.in_dims[0] * 2 * 2 ** i)
+                #  for i in range(8)]
+                [SeparableConvBlock(self.in_dims[1],
+                                    2 * self.in_dims[1],
+                                    int(self.in_dims[2] / 2 ** i))
+                 for i in range(int(np.log2(self.in_dims[2])) - 1)]
+                # + [nn.AdaptiveMaxPool2d(1)]
+            )
+
+            self.logits_layer = nn.Linear(self.in_dims[1],
+                                          self.num_classes)
+        else:
+            raise NotImplementedError('Classification Net type '
+                                      'requested {} is not '
+                                      'available.'.format(model_type))
+
+    def forward(self, x):
+        # Renormalize the input
+        x = self.input_norm(x.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
+
+        # Get the source embedding
+        for module in self.embedding_network:
+            x = module(x)
+
+        return self.logits_layer(x.view(x.shape[0], -1))
+
 
 
 class TDCN(nn.Module):
@@ -93,23 +204,10 @@ class TDCN(nn.Module):
                                      groups=S)
         # self.attn = Attention((64000 // (self.L-1)))
 
-        self.embedding_network = nn.ModuleList([
-            nn.LeakyReLU(),
-            # nn.LayerNorm([X * R, B, (64000 // (self.L-1))]),
-            # nn.LayerNorm([X * R, B, 1]),
-            nn.Conv2d(in_channels=X * R,
-                      out_channels=1,
-                      kernel_size=1),
-            nn.LeakyReLU(),
-            # nn.LayerNorm([1, B, (64000 // (self.L - 1))]),
-            nn.Conv2d(in_channels=1,
-                      out_channels=1,
-                      kernel_size=(B, 1)),
-            nn.LeakyReLU(),
-            nn.LayerNorm([1, 1, (64000 // (self.L - 1))]),
-        ])
-
-        self.logits_layer = nn.Linear((64000 // (self.L-1)), 50)
+        self.classification_net = ClassificationNet(
+            input_dimensions=[X * R, B, (64000 // (self.L-1))],
+            num_classes=50,
+            model_type='2d_separable_pooling')
 
         # # Masks layer
         # self.m2 = nn.Conv2d(in_channels=1,
@@ -117,12 +215,6 @@ class TDCN(nn.Module):
         #                     kernel_size=(N + 1, 1),
         #                     padding=(N - N // 2, 0))
         # self.ln_mask_in2 = GlobalLayerNorm(self.N)
-
-    def get_source_embedding(self, source_feature_map):
-        x = source_feature_map
-        for module in self.embedding_network:
-            x = module(x)
-        return x
 
     # Forward pass
     def forward(self, x, return_logits=False):
@@ -161,11 +253,8 @@ class TDCN(nn.Module):
             # apply masks to all multi-scale maps
             sources_logits = []
             for i in range(self.S):
-                source_embedding = self.get_source_embedding(
-                    multi_scale_maps * final_masks[:, i].unsqueeze(1))
-                sources_logits.append(
-                    self.logits_layer(source_embedding.view(
-                        source_embedding.shape[0], -1)))
+                sources_logits.append(self.classification_net(
+                    multi_scale_maps * final_masks[:, i].unsqueeze(1)))
             logits = torch.stack(sources_logits, dim=1)
 
             # # Just use the full multi-scale features as logits
@@ -376,14 +465,15 @@ class CepstralNorm(nn.Module):
 
 
 if __name__ == "__main__":
+    X, R, L, B = 8, 3, 21, 256
     model = TDCN(
-        B=256,
+        B=B,
         P=3,
         H=512,
-        R=3,
-        X=8,
+        R=R,
+        X=X,
         S=2,
-        L=21,
+        L=L,
         N=256)
     print(model)
 
@@ -399,3 +489,17 @@ if __name__ == "__main__":
         if f.requires_grad:
             numparams += f.numel()
     print('Trainable Parameters: {}'.format(numparams))
+
+    classification_net = ClassificationNet(
+        input_dimensions=[X * R, B, (64000 // (L - 1))],
+        num_classes=50,
+        model_type='2d_separable_pooling')
+    numparams = 0
+    for f in classification_net.parameters():
+        if f.requires_grad:
+            numparams += f.numel()
+    print('Classification Parameters: {}'.format(numparams))
+
+    logits = classification_net(torch.rand(4, X * R, B,
+                                           (64000 // (L - 1))))
+    assert logits.shape[-1] == 50
