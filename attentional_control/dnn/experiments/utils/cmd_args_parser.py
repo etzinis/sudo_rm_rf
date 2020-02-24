@@ -104,10 +104,14 @@ def get_args():
                                  'binarized'])
 
     # model params
-    parser.add_argument("--tasnet_type", type=str,
-                        help="The type of tasnet that you would like to use.",
+    parser.add_argument("--model_type", type=str,
+                        help="The type of model you would like "
+                             "to use. In tasnet models you need to "
+                             "choose between simple or residual.",
                         default='simple',
-                        choices=['simple', 'residual'])
+                        choices=['simple', 'residual',
+                                 'baseline_dprnn',
+                                 'baseline_demucs'])
     parser.add_argument("-N", "--n_basis", type=int,
                         help="Dim of encoded representation",
                         default=256)

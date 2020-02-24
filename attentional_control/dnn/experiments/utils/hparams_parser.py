@@ -37,7 +37,7 @@ def get_hparams_from_args(args):
         "max_abs_snr": args.max_abs_snr,
         'selected_timelength': args.selected_timelength,
         'fixed_seed': args.fixed_seed,
-        'tasnet_type': args.tasnet_type,
+        'model_type': args.model_type,
         'divide_lr_by': args.divide_lr_by,
         'reduce_lr_every': args.reduce_lr_every,
         "fs": args.fs,
