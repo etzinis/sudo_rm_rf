@@ -83,7 +83,7 @@ tr_val_losses = dict([
                                                improvement=True,
                                                return_individual_results=True))])
 
-if hparams['tasnet_type'] == 'simple':
+if hparams['model_type'] == 'simple':
     model_class = ptasent.TDCN
     model = ptasent.TDCN(
         B=hparams['B'],
@@ -94,7 +94,7 @@ if hparams['tasnet_type'] == 'simple':
         L=hparams['n_kernel'],
         N=hparams['n_basis'],
         S=2)
-elif hparams['tasnet_type'] == 'residual':
+elif hparams['model_type'] == 'residual':
     model_class = ptasent.ResidualTN
     model = ptasent.ResidualTN(
         B=hparams['B'],
@@ -107,7 +107,7 @@ elif hparams['tasnet_type'] == 'residual':
         S=2)
 else:
     raise NotImplementedError(
-        'Tasnet type: {} is not yet available.'.format(hparams['tasnet_type']))
+        'Tasnet type: {} is not yet available.'.format(hparams['model_type']))
 
 numparams = 0
 for f in model.parameters():
