@@ -496,18 +496,18 @@ def test_truly_random_generator():
 
 
 def test_metadata_loading():
-    bs, n_samples, fs, timelength, n_sources = 2, 4, 8000., 4., 2
+    bs, n_samples, fs, timelength, n_sources = 2, 4000, 8000., 3.096, 2
     these_args = argparse.Namespace(
-        input_dataset_p=[os.path.join(ESC50_HIERARCHICAL_P, 'train')],
+        input_dataset_p=[os.path.join(WSJ_MIX_HIERARCHICAL_P, 'train')],
         datasets_priors=[1.],
         batch_size=bs,
         n_jobs=4,
         n_samples=n_samples,
-        # return_items=['wav'],
-        return_items=['wav', 'fold', 'class_id',
-                      'human_readable_class', 'source_file'],
+        return_items=['wav'],
+        # return_items=['wav', 'fold', 'class_id',
+        #               'human_readable_class', 'source_file'],
         fs=fs,
-        selected_timelength=4.,
+        selected_timelength=timelength,
         n_sources=n_sources,
         max_abs_snr=2.5,
         fixed_seed=0
@@ -517,18 +517,18 @@ def test_metadata_loading():
     gen = get_data_gen_from_loader(data_loader)
 
     for data in gen:
-        for i in range(4):
-            assert type(data[i]) == torch.Tensor
+        # for i in range(4):
+        #     assert type(data[i]) == torch.Tensor
         assert data[0].shape == torch.Size([int(bs),
                                             int(fs * timelength)])
         assert data[1].shape == torch.Size([int(bs), int(n_sources),
                                             int(fs * timelength)])
-        assert data[2].shape == torch.Size([int(bs), int(n_sources)])
-        assert data[3].shape == torch.Size([int(bs), int(n_sources)])
+        # assert data[2].shape == torch.Size([int(bs), int(n_sources)])
+        # assert data[3].shape == torch.Size([int(bs), int(n_sources)])
 
 
 if __name__ == "__main__":
     # pytorch_dataloader_args = get_args()
     # example_of_usage(pytorch_dataloader_args)
-    test_truly_random_generator()
+    # test_truly_random_generator()
     test_metadata_loading()
