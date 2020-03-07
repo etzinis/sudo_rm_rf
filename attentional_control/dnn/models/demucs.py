@@ -47,6 +47,7 @@ class BLSTM(nn.Module):
 
     def forward(self, x):
         x = x.permute(2, 0, 1)
+        self.lstm.flatten_parameters()
         x = self.lstm(x)[0]
         x = self.linear(x)
         x = x.permute(1, 2, 0)
@@ -154,11 +155,15 @@ class Demucs(nn.Module):
         for index in range(depth):
             encode = []
             encode += [nn.Conv1d(in_channels, channels, kernel_size,
-                                 stride, padding=(kernel_size - 1)//2),
+                                 stride,
+                                 # padding=(kernel_size - 1)//2
+                                 ),
                        nn.ReLU()]
             if rewrite:
                 encode += [nn.Conv1d(channels, ch_scale * channels,
-                                     1, padding=0), activation]
+                                     1,
+                                     # padding=0
+                                     ), activation]
             self.encoder.append(nn.Sequential(*encode))
 
             decode = []
@@ -171,19 +176,21 @@ class Demucs(nn.Module):
                     out_channels = sources * audio_channels
             if rewrite:
                 decode += [nn.Conv1d(channels, ch_scale * channels,
-                                     context, padding=(context - 1)//2),
+                                     context,
+                                     # padding=(context - 1)//2
+                                     ),
                            activation]
             if upsample:
                 decode += [
                     nn.Conv1d(channels, out_channels, kernel_size,
-                              padding=(kernel_size - 1)//2,
+                              # padding=(kernel_size - 1)//2,
                               stride=1),
                 ]
             else:
                 decode += [nn.ConvTranspose1d(
                     channels, out_channels, kernel_size, stride,
-                    padding=(kernel_size)//2-1,
-                    output_padding=stride // 2
+                    # padding=(kernel_size)//2-1,
+                    # output_padding=stride // 2
                 )
                            ]
             if index > 0:
@@ -297,9 +304,9 @@ if __name__ == "__main__":
     # print(model)
 
     print('Testing Forward pass')
-    dummy_input = torch.rand(1, 1, 31744)
+    dummy_input = torch.rand(1, 1, 32000)
 
-    # import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
 
     pred_sources = model.forward(dummy_input)
     print(pred_sources.size())

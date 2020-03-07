@@ -14,6 +14,7 @@ from __config__ import API_KEY
 from comet_ml import Experiment
 
 import torch
+from torch.nn import functional as F
 import numpy as np
 from tqdm import tqdm
 from pprint import pprint
@@ -63,7 +64,7 @@ back_loss_tr_loss_name, back_loss_tr_loss = (
     'tr_back_loss_SISDRi',
     sisdr_lib.PermInvariantSISDR(batch_size=hparams['bs'],
                                  n_sources=hparams['n_sources'],
-                                 zero_mean=False,
+                                 zero_mean=True,
                                  backward_loss=True,
                                  improvement=True))
 
@@ -92,8 +93,8 @@ if hparams['model_type'] == 'baseline_dprnn':
 elif hparams['model_type'] == 'baseline_demucs':
     model = demucs.Demucs(sources=2,
                      audio_channels=1,
-                     channels=128,
-                     depth=5,
+                     channels=64,
+                     depth=6,
                      rewrite=True,
                      glu=True,
                      upsample=False,
@@ -117,8 +118,8 @@ for f in model.parameters():
 experiment.log_parameter('Parameters', numparams)
 print('Trainable Parameters: {}'.format(numparams))
 
-# model = torch.nn.DataParallel(model).cuda()
-model = model.cuda()
+model = torch.nn.DataParallel(model).cuda()
+# model = model.cuda()
 
 if hparams['optimizer'] == 'adam':
     opt = torch.optim.Adam(model.parameters(), lr=hparams['learning_rate'])
@@ -156,7 +157,12 @@ for i in range(hparams['n_epochs']):
         m1wavs = data[0].cuda()
         clean_wavs = data[-1].cuda()
 
-        rec_sources_wavs = model(m1wavs.unsqueeze(1)).squeeze()
+        # rec_sources_wavs = model(m1wavs.unsqueeze(1))
+        # Specific calling for demucs architecture only
+        rec_sources_wavs = model(
+            F.pad(m1wavs.unsqueeze(1), (7210, 7210))).squeeze()
+        rec_sources_wavs = demucs.center_trim(rec_sources_wavs,
+                                              clean_wavs)
 
         l = back_loss_tr_loss(rec_sources_wavs,
                               clean_wavs,
@@ -166,6 +172,7 @@ for i in range(hparams['n_epochs']):
                                            hparams['clip_grad_norm'])
         l.backward()
         opt.step()
+
         if hparams['optimizer'] == 'radam':
             lr_scheduler.step()
             warmup_scheduler.dampen()
@@ -188,7 +195,13 @@ for i in range(hparams['n_epochs']):
                 m1wavs = data[0].cuda()
                 clean_wavs = data[-1].cuda()
 
-                rec_sources_wavs = model(m1wavs.unsqueeze(1)).squeeze()
+                # rec_sources_wavs = model(m1wavs.unsqueeze(1))
+                # Specific calling for demucs architecture only
+                rec_sources_wavs = model(
+                    F.pad(m1wavs.unsqueeze(1), (7210, 7210))).squeeze()
+                rec_sources_wavs = demucs.center_trim(rec_sources_wavs,
+                                                      clean_wavs)
+
                 for loss_name, loss_func in val_losses.items():
                     l = loss_func(rec_sources_wavs,
                                   clean_wavs,
@@ -208,12 +221,19 @@ for i in range(hparams['n_epochs']):
                 m1wavs = data[0].cuda()
                 clean_wavs = data[-1].cuda()
 
-                rec_sources_wavs = model(m1wavs.unsqueeze(1)).squeeze()
+                # rec_sources_wavs = model(m1wavs.unsqueeze(1)).squeeze()
+                # Specific calling for demucs architecture only
+                rec_sources_wavs = model(
+                    F.pad(m1wavs.unsqueeze(1), (7210, 7210))).squeeze()
+                rec_sources_wavs = demucs.center_trim(rec_sources_wavs,
+                                                      clean_wavs)
+
                 for loss_name, loss_func in tr_val_losses.items():
                     l = loss_func(rec_sources_wavs,
                                   clean_wavs,
                                   initial_mixtures=m1wavs.unsqueeze(1))
                     res_dic[loss_name]['acc'] += l.tolist()
+
 
     if hparams["metrics_log_path"] is not None:
         metrics_logger.log_metrics(res_dic, hparams["metrics_log_path"],
