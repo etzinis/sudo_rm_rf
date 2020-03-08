@@ -141,7 +141,7 @@ class MTDCN(nn.Module):
                           kernel_size=kernel_size,
                           padding=(dilation * (kernel_size - 1)) // 2,
                           dilation=dilation,
-                          groups=embedding_channels),
+                          groups=embedding_channels // 2),
                 nn.PReLU(),
                 GlobalLayerNorm(embedding_channels),
                 nn.Conv1d(in_channels=embedding_channels,
@@ -240,7 +240,7 @@ class MTDCN(nn.Module):
             MTDCN.FlattenedDilatedConvBlock(
                 self.flattened_tensor_size,
                 2 * self.flattened_tensor_size,
-                kernel_size=P, dilation=1)
+                kernel_size=P, dilation=2**d)
             for _ in range(R) for d in range(X)])
         #
         # if B != N:

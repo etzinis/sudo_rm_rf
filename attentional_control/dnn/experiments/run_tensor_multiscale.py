@@ -83,14 +83,14 @@ tr_val_losses = dict([
                                                improvement=True,
                                                return_individual_results=True))])
 
-scales = 4
-min_basis = 64
-min_kernel = 40
+scales = 3
+min_basis = 128
+min_kernel = 20
 upsapling_rate = 4
 Ns = [min_basis * upsapling_rate ** s for s in range(scales)]
 Ls = [min_kernel * upsapling_rate ** s + 1 for s in range(scales)]
-Ns = [64] * 4
-Ls = [41] * 4
+# Ns = [min_basis] * 3
+# Ls = [41] * 3
 print(Ns, Ls)
 
 model = mtdcn.MTDCN(
