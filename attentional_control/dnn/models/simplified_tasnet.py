@@ -610,11 +610,52 @@ class ResidualTN(nn.Module):
 
 
 if __name__ == "__main__":
-    model = CTN(
+    import torch
+    import os
+    model = TDCN(
         B=256,
+        H=512,
         P=3,
         R=4,
         X=8,
         L=21,
-        N=256)
-    print(model)
+        N=256,
+        S=2)
+
+    # print('Try to fit the model in memory')
+    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    model = model.cuda()
+    # print(model.summary())
+
+    print('Testing Forward pass')
+    dummy_input = torch.rand(1, 1, 32000)
+    dummy_input = torch.rand(1, 1, 32000).cuda()
+
+    # import pdb; pdb.set_trace()
+
+    import time
+
+    now = time.time()
+    pred_sources = model.forward(dummy_input)
+    print(pred_sources.size())
+    print('Elapsed: {}'.format(time.time() - now))
+    try:
+        from thop import profile
+        macs, params = profile(model, inputs=(dummy_input,))
+        print('MACS and params')
+        print(round(macs / 10**6, 2), round(params / 10**6, 2))
+
+        from pytorch_memlab import profile
+        @profile
+        def work():
+            pred_sources = model.forward(dummy_input)
+        work()
+    except:
+        print('Could not find the profiler')
+
+    numparams = 0
+    for f in model.parameters():
+        if f.requires_grad:
+            numparams += f.numel()
+    print('Trainable Parameters: {}'.format(numparams))
+

@@ -415,3 +415,51 @@ class FaSNet_base(nn.Module):
         #     est_source = est_source[:, :, :-rest]
 
         return est_source
+
+
+if __name__ == "__main__":
+    import torch
+    import os
+    model = FaSNet_base(
+        enc_dim=256, feature_dim=64, hidden_dim=128,
+        layer=6, segment_size=250, nspk=2, win_len=2)
+    # print('Try to fit the model in memory')
+    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    model = model.cuda()
+    # print(model.summary())
+
+    print('Testing Forward pass')
+    dummy_input = torch.rand(1, 32000).cuda()
+
+    # import pdb; pdb.set_trace()
+
+    import time
+
+    now = time.time()
+    pred_sources = model.forward(dummy_input)
+    print(pred_sources.size())
+    print('Elapsed: {}'.format(time.time() - now))
+    try:
+        from thop import profile
+
+        macs, params = profile(model, inputs=(dummy_input,))
+        print('MACS and params')
+        print(round(macs / 10 ** 6, 2), round(params / 10 ** 6, 2))
+
+        from pytorch_memlab import profile
+
+
+        @profile
+        def work():
+            pred_sources = model.forward(dummy_input)
+
+
+        work()
+    except:
+        print('Could not find the profiler')
+
+    numparams = 0
+    for f in model.parameters():
+        if f.requires_grad:
+            numparams += f.numel()
+    print('Trainable Parameters: {}'.format(numparams))
