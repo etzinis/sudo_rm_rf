@@ -289,7 +289,7 @@ if __name__ == "__main__":
     import os
     model = Demucs(sources=2,
                      audio_channels=1,
-                     channels=64,
+                     channels=100,
                      depth=6,
                      rewrite=True,
                      glu=True,
@@ -301,13 +301,13 @@ if __name__ == "__main__":
                      lstm_layers=2,
                      context=3)
     # print('Try to fit the model in memory')
-    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '2'
     model = model.cuda()
     # print(model.summary())
 
     print('Testing Forward pass')
     # dummy_input = torch.rand(1, 1, 32000).cuda()
-    dummy_input = torch.rand(1, 1, 32000).cuda()
+    dummy_input = torch.rand(1, 32000).cuda()
 
     # import pdb; pdb.set_trace()
 

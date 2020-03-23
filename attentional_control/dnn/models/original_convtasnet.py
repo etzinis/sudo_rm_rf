@@ -370,13 +370,13 @@ if __name__ == "__main__":
     model = TasNet()
 
     # print('Try to fit the model in memory')
-    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
-    model = model.cuda()
+    # os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+    # model = model.cuda()
+    # dummy_input = torch.rand(1, 1, 32000).cuda()
     # print(model.summary())
 
     print('Testing Forward pass')
     dummy_input = torch.rand(1, 1, 32000)
-    dummy_input = torch.rand(1, 1, 32000).cuda()
 
     # import pdb; pdb.set_trace()
 

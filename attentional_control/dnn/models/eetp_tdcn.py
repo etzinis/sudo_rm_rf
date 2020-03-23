@@ -564,10 +564,10 @@ if __name__ == "__main__":
     # print(model.summary())
 
     print('Testing Forward pass')
-    os.environ['CUDA_VISIBLE_DEVICES'] = '2'
-    model = model.cuda()
+    # os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+    # model = model.cuda()
+    # dummy_input = torch.rand(1, 1, 32000).cuda()
     dummy_input = torch.rand(1, 1, 32000)
-    dummy_input = torch.rand(1, 1, 32000).cuda()
 
     # import pdb; pdb.set_trace()
 
