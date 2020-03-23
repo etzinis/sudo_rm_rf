@@ -113,7 +113,8 @@ def get_args():
                                  'baseline_dprnn',
                                  'baseline_demucs',
                                  'eetp_tdcn',
-                                 'eunet'])
+                                 'eunet',
+                                 'baseline_original_convtasnet'])
     parser.add_argument("-N", "--n_basis", type=int,
                         help="Dim of encoded representation",
                         default=256)
