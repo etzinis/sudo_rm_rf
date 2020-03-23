@@ -28,6 +28,8 @@ import attentional_control.dnn.utils.log_audio as log_audio
 import attentional_control.dnn.experiments.utils.cmd_args_parser as parser
 import attentional_control.dnn.models.dprnn as dprnn
 import attentional_control.dnn.models.demucs as demucs
+import attentional_control.dnn.models.original_convtasnet as \
+    original_convtasnet
 import attentional_control.dnn.experiments.utils.hparams_parser as \
     hparams_parser
 
@@ -90,6 +92,13 @@ if hparams['model_type'] == 'baseline_dprnn':
     model = dprnn.FaSNet_base(
         enc_dim=256, feature_dim=64, hidden_dim=128,
         layer=6, segment_size=250, nspk=2, win_len=2)
+elif hparams['model_type'] == 'baseline_original_convtasnet':
+    model = original_convtasnet.TasNet(enc_dim=512, feature_dim=128,
+                                       sr=hparams["fs"],
+                                       win=hparams['selected_timelength'],
+                                       layer=8, stack=3, kernel=3,
+                                       num_spk=hparams["n_sources"],
+                                       causal=False)
 elif hparams['model_type'] == 'baseline_demucs':
     model = demucs.Demucs(sources=2,
                      audio_channels=1,
@@ -148,7 +157,7 @@ for i in range(hparams['n_epochs']):
     res_dic = {}
     for loss_name in all_losses:
         res_dic[loss_name] = {'mean': 0., 'std': 0., 'acc': []}
-    print("Basesline Experiment: {} - {} || Epoch: {}/{}".format(
+    print("Baseline Experiment: {} - {} || Epoch: {}/{}".format(
         experiment.get_key(), experiment.get_tags(), i+1, hparams['n_epochs']))
     model.train()
 
@@ -157,12 +166,7 @@ for i in range(hparams['n_epochs']):
         m1wavs = data[0].cuda()
         clean_wavs = data[-1].cuda()
 
-        # rec_sources_wavs = model(m1wavs.unsqueeze(1))
-        # Specific calling for demucs architecture only
-        rec_sources_wavs = model(
-            F.pad(m1wavs.unsqueeze(1), (7210, 7210))).squeeze()
-        rec_sources_wavs = demucs.center_trim(rec_sources_wavs,
-                                              clean_wavs)
+        rec_sources_wavs = model(m1wavs)
 
         l = back_loss_tr_loss(rec_sources_wavs,
                               clean_wavs,
@@ -177,6 +181,7 @@ for i in range(hparams['n_epochs']):
             lr_scheduler.step()
             warmup_scheduler.dampen()
         res_dic[back_loss_tr_loss_name]['acc'].append(l.item())
+        break
 
 
     if hparams['reduce_lr_every'] > 0:
@@ -195,18 +200,14 @@ for i in range(hparams['n_epochs']):
                 m1wavs = data[0].cuda()
                 clean_wavs = data[-1].cuda()
 
-                # rec_sources_wavs = model(m1wavs.unsqueeze(1))
-                # Specific calling for demucs architecture only
-                rec_sources_wavs = model(
-                    F.pad(m1wavs.unsqueeze(1), (7210, 7210))).squeeze()
-                rec_sources_wavs = demucs.center_trim(rec_sources_wavs,
-                                                      clean_wavs)
+                rec_sources_wavs = model(m1wavs)
 
                 for loss_name, loss_func in val_losses.items():
                     l = loss_func(rec_sources_wavs,
                                   clean_wavs,
                                   initial_mixtures=m1wavs.unsqueeze(1))
                     res_dic[loss_name]['acc'] += l.tolist()
+                break
 
             if hparams["log_path"] is not None:
                 audio_logger.log_batch(rec_sources_wavs,
@@ -221,18 +222,14 @@ for i in range(hparams['n_epochs']):
                 m1wavs = data[0].cuda()
                 clean_wavs = data[-1].cuda()
 
-                # rec_sources_wavs = model(m1wavs.unsqueeze(1)).squeeze()
-                # Specific calling for demucs architecture only
-                rec_sources_wavs = model(
-                    F.pad(m1wavs.unsqueeze(1), (7210, 7210))).squeeze()
-                rec_sources_wavs = demucs.center_trim(rec_sources_wavs,
-                                                      clean_wavs)
+                rec_sources_wavs = model(m1wavs)
 
                 for loss_name, loss_func in tr_val_losses.items():
                     l = loss_func(rec_sources_wavs,
                                   clean_wavs,
                                   initial_mixtures=m1wavs.unsqueeze(1))
                     res_dic[loss_name]['acc'] += l.tolist()
+                break
 
 
     if hparams["metrics_log_path"] is not None:
