@@ -25,6 +25,7 @@ import attentional_control.dnn.utils.metrics_logger as metrics_logger
 import attentional_control.dnn.utils.log_audio as log_audio
 import attentional_control.dnn.experiments.utils.cmd_args_parser as parser
 import attentional_control.dnn.models.tensor_multiscale as mtdcn
+import attentional_control.dnn.models.tensor_multiscale_v2 as mtdcn_v2
 import attentional_control.dnn.experiments.utils.hparams_parser as \
     hparams_parser
 
@@ -84,23 +85,35 @@ tr_val_losses = dict([
                                                return_individual_results=True))])
 
 scales = 3
-min_basis = 128
-min_kernel = 20
+min_basis = 256
+min_kernel = 40
 upsapling_rate = 4
 Ns = [min_basis * upsapling_rate ** s for s in range(scales)]
 Ls = [min_kernel * upsapling_rate ** s + 1 for s in range(scales)]
-# Ns = [min_basis] * 3
-# Ls = [41] * 3
+Ns = [min_basis] * 3
+Ls = [41] * 3
 print(Ns, Ls)
 
-model = mtdcn.MTDCN(
+# model = mtdcn.MTDCN(
+#     B=hparams['B'],
+#     H=hparams['H'],
+#     P=hparams['P'],
+#     R=hparams['R'],
+#     X=hparams['X'],
+#     Ns=Ns,
+#     Ls=Ls,
+#     S=2)
+
+model = mtdcn_v2.EfficientMTDCN(
     B=hparams['B'],
     H=hparams['H'],
     P=hparams['P'],
     R=hparams['R'],
     X=hparams['X'],
-    Ns=Ns,
-    Ls=Ls,
+    N_in=256,
+    N_out=256,
+    L_in=81,
+    L_out=21,
     S=2)
 
 numparams = 0
