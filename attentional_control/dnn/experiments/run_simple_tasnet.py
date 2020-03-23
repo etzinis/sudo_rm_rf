@@ -25,6 +25,8 @@ import attentional_control.dnn.utils.metrics_logger as metrics_logger
 import attentional_control.dnn.utils.log_audio as log_audio
 import attentional_control.dnn.experiments.utils.cmd_args_parser as parser
 import attentional_control.dnn.models.simplified_tasnet as ptasent
+import attentional_control.dnn.models.eetp_tdcn as eetptdcn
+import attentional_control.dnn.models.unet_eetp_tdcn as eunet
 import attentional_control.dnn.experiments.utils.hparams_parser as \
     hparams_parser
 
@@ -97,6 +99,26 @@ if hparams['model_type'] == 'simple':
 elif hparams['model_type'] == 'residual':
     model_class = ptasent.ResidualTN
     model = ptasent.ResidualTN(
+        B=hparams['B'],
+        H=hparams['H'],
+        P=hparams['P'],
+        R=hparams['R'],
+        X=hparams['X'],
+        L=hparams['n_kernel'],
+        N=hparams['n_basis'],
+        S=2)
+elif hparams['model_type'] == 'eetp_tdcn':
+    model = eetptdcn.EETPTDCN(
+        B=hparams['B'],
+        H=hparams['H'],
+        P=hparams['P'],
+        R=hparams['R'],
+        X=hparams['X'],
+        L=hparams['n_kernel'],
+        N=hparams['n_basis'],
+        S=2)
+elif hparams['model_type'] == 'eunet':
+    model = eunet.EETPTDCN(
         B=hparams['B'],
         H=hparams['H'],
         P=hparams['P'],
@@ -220,10 +242,10 @@ for i in range(hparams['n_epochs']):
                                                         tr_step,
                                                         val_step)
 
-    model_class.save_if_best(
-        hparams['tn_mask_dir'], model.module, opt, tr_step,
-        res_dic[back_loss_tr_loss_name]['mean'],
-        res_dic[val_loss_name]['mean'], val_loss_name.replace("_", ""))
+    # model_class.save_if_best(
+    #     hparams['tn_mask_dir'], model.module, opt, tr_step,
+    #     res_dic[back_loss_tr_loss_name]['mean'],
+    #     res_dic[val_loss_name]['mean'], val_loss_name.replace("_", ""))
     for loss_name in res_dic:
         res_dic[loss_name]['acc'] = []
     pprint(res_dic)

@@ -111,7 +111,9 @@ def get_args():
                         default='simple',
                         choices=['simple', 'residual',
                                  'baseline_dprnn',
-                                 'baseline_demucs'])
+                                 'baseline_demucs',
+                                 'eetp_tdcn',
+                                 'eunet'])
     parser.add_argument("-N", "--n_basis", type=int,
                         help="Dim of encoded representation",
                         default=256)
