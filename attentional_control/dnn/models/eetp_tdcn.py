@@ -28,7 +28,7 @@ class ConvNormAct(nn.Module):
         padding = int((kSize - 1) / 2)
         self.conv = nn.Conv1d(nIn, nOut, kSize, stride=stride, padding=padding,
                               bias=True, groups=groups)
-        self.norm = GlobalLayerNorm(nOut)
+        self.norm = nn.GroupNorm(1, nOut, eps=1e-08)
         self.act = nn.PReLU(nOut)
 
     def forward(self, input):
@@ -53,7 +53,7 @@ class ConvNorm(nn.Module):
         padding = int((kSize - 1) / 2)
         self.conv = nn.Conv1d(nIn, nOut, kSize, stride=stride, padding=padding,
                               bias=True, groups=groups)
-        self.norm = GlobalLayerNorm(nOut)
+        self.norm = nn.GroupNorm(1, nOut, eps=1e-08)
 
     def forward(self, input):
         output = self.conv(input)
@@ -69,7 +69,7 @@ class NormAct(nn.Module):
         :param nOut: number of output channels
         '''
         super().__init__()
-        self.norm = GlobalLayerNorm(nOut)
+        self.norm = nn.GroupNorm(1, nOut, eps=1e-08)
         self.act = nn.PReLU(nOut)
 
     def forward(self, input):
@@ -114,7 +114,7 @@ class DilatedConvNorm(nn.Module):
         super().__init__()
         self.conv = nn.Conv1d(nIn, nOut, kSize, stride=stride, dilation=d,
                               padding=((kSize - 1) // 2) * d, groups=groups)
-        self.norm = GlobalLayerNorm(nOut)
+        self.norm = nn.GroupNorm(1, nOut, eps=1e-08)
 
     def forward(self, input):
         output = self.conv(input)
@@ -286,7 +286,7 @@ class EETPTDCN(nn.Module):
         ])
 
         # Norm before the rest, and apply one more dense layer
-        self.ln = GlobalLayerNorm(N)
+        self.ln = nn.GroupNorm(1, N, eps=1e-08)
         # self.ln = nn.BatchNorm1d(N)
         self.l1 = nn.Conv1d(in_channels=N, out_channels=B, kernel_size=1)
 
@@ -317,7 +317,7 @@ class EETPTDCN(nn.Module):
                                      stride=L // 2, padding=L // 2,
                                      groups=S)
         # self.ln_mask_in = nn.BatchNorm1d(self.N)
-        self.ln_mask_in = GlobalLayerNorm(self.N)
+        self.ln_mask_in = nn.GroupNorm(1, self.N, eps=1e-08)
 
     # Forward pass
     def forward(self, x):
@@ -552,9 +552,9 @@ if __name__ == "__main__":
     import os
     model = EETPTDCN(
         B=128,
-        H=256,
+        H=512,
         P=3,
-        R=5,
+        R=16,
         X=8,
         L=21,
         N=256,
@@ -564,7 +564,7 @@ if __name__ == "__main__":
     # print(model.summary())
 
     print('Testing Forward pass')
-    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '2'
     model = model.cuda()
     dummy_input = torch.rand(1, 1, 32000)
     dummy_input = torch.rand(1, 1, 32000).cuda()

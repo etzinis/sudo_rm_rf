@@ -28,7 +28,7 @@ class ConvNormAct(nn.Module):
         padding = int((kSize - 1) / 2)
         self.conv = nn.Conv1d(nIn, nOut, kSize, stride=stride, padding=padding,
                               bias=True, groups=groups)
-        self.norm = GlobalLayerNorm(nOut)
+        self.norm = nn.GroupNorm(1, nOut, eps=1e-08)
         self.act = nn.PReLU(nOut)
 
     def forward(self, input):
@@ -53,7 +53,7 @@ class ConvNorm(nn.Module):
         padding = int((kSize - 1) / 2)
         self.conv = nn.Conv1d(nIn, nOut, kSize, stride=stride, padding=padding,
                               bias=True, groups=groups)
-        self.norm = GlobalLayerNorm(nOut)
+        self.norm = nn.GroupNorm(1, nOut, eps=1e-08)
 
     def forward(self, input):
         output = self.conv(input)
@@ -69,7 +69,7 @@ class NormAct(nn.Module):
         :param nOut: number of output channels
         '''
         super().__init__()
-        self.norm = GlobalLayerNorm(nOut)
+        self.norm = nn.GroupNorm(1, nOut, eps=1e-08)
         self.act = nn.PReLU(nOut)
 
     def forward(self, input):
@@ -114,7 +114,7 @@ class DilatedConvNorm(nn.Module):
         super().__init__()
         self.conv = nn.Conv1d(nIn, nOut, kSize, stride=stride, dilation=d,
                               padding=((kSize - 1) // 2) * d, groups=groups)
-        self.norm = GlobalLayerNorm(nOut)
+        self.norm = nn.GroupNorm(1, nOut, eps=1e-08)
 
     def forward(self, input):
         output = self.conv(input)
@@ -235,7 +235,7 @@ class EETPTDCN(nn.Module):
         ])
 
         # Norm before the rest, and apply one more dense layer
-        self.ln = GlobalLayerNorm(N)
+        self.ln = nn.GroupNorm(1, N, eps=1e-08)
         # self.ln = nn.BatchNorm1d(N)
         self.l1 = nn.Conv1d(in_channels=N, out_channels=B, kernel_size=1)
 
@@ -259,8 +259,8 @@ class EETPTDCN(nn.Module):
                                            )
         self.scales_merging = nn.ModuleList(
             [
-             # MergeScales(B=B, upsampler=self.upsampler)
-             AddScales()
+             MergeScales(B=B)
+             # AddScales()
              for _ in range(1, R)]
         )
 
@@ -528,7 +528,7 @@ if __name__ == "__main__":
         B=256,
         H=512,
         P=3,
-        R=5,
+        R=3,
         X=8,
         L=21,
         N=256,
