@@ -10,6 +10,7 @@ import math
 
 import torch as th
 from torch import nn
+from torch.nn import functional as F
 import functools
 
 
@@ -240,7 +241,8 @@ class Demucs(nn.Module):
     def forward(self, mix):
         # print('mix')
         # print(mix.shape)
-        x = mix
+        # Preprocess appropriately:
+        x = F.pad(mix.unsqueeze(1), (7210, 7210))
         saved = [x]
         for encode in self.encoder:
             x = encode(x)
@@ -278,8 +280,8 @@ class Demucs(nn.Module):
             # print('after final')
             # print(x.shape)
 
-        x = x.view(x.size(0), self.sources, self.audio_channels, x.size(-1))
-        return x
+        x = x.view(x.size(0), self.sources, x.size(-1))
+        return center_trim(x, mix)
 
 
 if __name__ == "__main__":
@@ -287,7 +289,7 @@ if __name__ == "__main__":
     import os
     model = Demucs(sources=2,
                      audio_channels=1,
-                     channels=100,
+                     channels=64,
                      depth=6,
                      rewrite=True,
                      glu=True,
@@ -305,8 +307,7 @@ if __name__ == "__main__":
 
     print('Testing Forward pass')
     # dummy_input = torch.rand(1, 1, 32000).cuda()
-    from torch.nn import functional as F
-    dummy_input = F.pad(torch.rand(1, 1, 32000), (7210, 7210)).cuda()
+    dummy_input = torch.rand(1, 1, 32000).cuda()
 
     # import pdb; pdb.set_trace()
 

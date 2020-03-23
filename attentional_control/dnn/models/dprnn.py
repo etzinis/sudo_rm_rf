@@ -424,7 +424,7 @@ if __name__ == "__main__":
         enc_dim=256, feature_dim=64, hidden_dim=128,
         layer=6, segment_size=250, nspk=2, win_len=2)
     # print('Try to fit the model in memory')
-    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '2'
     model = model.cuda()
     # print(model.summary())
 
