@@ -525,10 +525,10 @@ if __name__ == "__main__":
     import torch
     import os
     model = EETPTDCN(
-        B=256,
+        B=128,
         H=512,
         P=3,
-        R=3,
+        R=5,
         X=8,
         L=21,
         N=256,
@@ -538,7 +538,7 @@ if __name__ == "__main__":
     # print(model.summary())
 
     print('Testing Forward pass')
-    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '2'
     model = model.cuda()
     dummy_input = torch.rand(1, 1, 32000).cuda()
     # dummy_input = torch.rand(1, 1, 32000)

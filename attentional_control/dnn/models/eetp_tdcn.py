@@ -165,8 +165,6 @@ class UpsamplingEESP(nn.Module):
 
     def __init__(self, B=256, H=512, stride=1, k=4, dilation_factor=1):
         super().__init__()
-        # self.stride = stride
-        # n = int(nOut / k)
         self.proj_1x1 = ConvNormAct(B, H, 1, stride=1, groups=1)
         self.depth = k
 
@@ -214,57 +212,6 @@ class UpsamplingEESP(nn.Module):
             output[-1] = output[-1] + resampled_out_k
 
         expanded = self.conv_1x1_exp(self.final_norm(output[-1]))
-
-        return self.module_act(expanded + input)
-
-
-class EESP(nn.Module):
-    '''
-    This class defines the EESP block, which is based on the following principle
-        REDUCE ---> SPLIT ---> TRANSFORM --> MERGE
-    '''
-
-    def __init__(self, nIn, nOut, stride=1, k=4, dilation_factor=1):
-        '''
-        :param nIn: number of input channels
-        :param nOut: number of output channels
-        :param stride: factor by which we should skip (useful for down-sampling).
-        If 2, then down-samples the feature map by 2
-        :param k: # of parallel branches
-        :param dilation_factor: A number multiplying the dilation in the
-        exponent
-        :param g: number of groups to be used in the feature map reduction step.
-        '''
-        super().__init__()
-        self.stride = stride
-        n = int(nOut / k)
-        self.proj_1x1 = ConvNormAct(nIn, n, 1, stride=1, groups=1)
-
-        self.spp_dw = nn.ModuleList()
-        for i in range(k):
-            self.spp_dw.append(DilatedConvNorm(n, n, kSize=3, stride=stride,
-                                               groups=n, d=2**((k+1)*dilation_factor)))
-        self.conv_1x1_exp = ConvNorm(nOut, nOut, 1, 1, groups=1)
-        self.norm_after_cat = NormAct(nOut)
-        self.module_act = NormAct(nOut)
-
-    def forward(self, input):
-        '''
-        :param input: input feature map
-        :return: transformed feature map
-        '''
-
-        # Reduce --> project high-dimensional feature maps to low-dimensional space
-        output1 = self.proj_1x1(input)
-        output = [self.spp_dw[0](output1)]
-
-        # compute the output for each branch and hierarchically fuse them
-        for k in range(1, len(self.spp_dw)):
-            out_k = self.spp_dw[k](output1)
-            out_k = out_k + output[k - 1]
-            output.append(out_k)
-
-        expanded = self.conv_1x1_exp(self.norm_after_cat(torch.cat(output, 1)))
 
         return self.module_act(expanded + input)
 
@@ -557,17 +504,17 @@ if __name__ == "__main__":
         R=16,
         X=8,
         L=21,
-        N=256,
+        N=512,
         S=2)
 
     # print('Try to fit the model in memory')
     # print(model.summary())
 
     print('Testing Forward pass')
-    # os.environ['CUDA_VISIBLE_DEVICES'] = '2'
-    # model = model.cuda()
-    # dummy_input = torch.rand(1, 1, 32000).cuda()
-    dummy_input = torch.rand(1, 1, 32000)
+    os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+    model = model.cuda()
+    dummy_input = torch.rand(1, 1, 32000).cuda()
+    # dummy_input = torch.rand(1, 1, 32000)
 
     # import pdb; pdb.set_trace()
 
