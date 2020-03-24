@@ -8,10 +8,13 @@ https://github.com/facebookresearch/demucs
 
 import math
 
-import torch as th
+import torch
 from torch import nn
 from torch.nn import functional as F
 import functools
+import glob2
+import os, sys
+import datetime
 
 
 def capture_init(init):
@@ -74,7 +77,7 @@ def upsample(x, stride):
     Linear upsampling, the output will be `stride` times longer.
     """
     batch, channels, time = x.size()
-    weight = th.arange(stride, device=x.device, dtype=th.float) / stride
+    weight = torch.arange(stride, device=x.device, dtype=torch.float) / stride
     x = x.view(batch, channels, time, 1)
     out = x[..., :-1, :] * (1 - weight) + x[..., 1:, :] * weight
     return out.reshape(batch, channels, -1)
@@ -90,9 +93,9 @@ def downsample(x, stride):
 class Demucs(nn.Module):
     @capture_init
     def __init__(self,
-                 sources=4,
-                 audio_channels=2,
-                 channels=64,
+                 sources=2,
+                 audio_channels=1,
+                 channels=80,
                  depth=6,
                  rewrite=True,
                  glu=True,
@@ -274,7 +277,7 @@ class Demucs(nn.Module):
             skip = center_trim(saved.pop(-1), x)
             # print('after final trim')
             # print(skip.shape)
-            x = th.cat([x, skip], dim=1)
+            x = torch.cat([x, skip], dim=1)
             # x = th.cat([x, saved.pop(-1)], dim=1)
             x = self.final(x)
             # print('after final')
@@ -282,6 +285,125 @@ class Demucs(nn.Module):
 
         x = x.view(x.size(0), self.sources, x.size(-1))
         return center_trim(x, mix)
+
+    @classmethod
+    def save(cls, model, path, optimizer, epoch,
+             tr_loss=None, cv_loss=None):
+        package = cls.serialize(model, optimizer, epoch,
+                                tr_loss=tr_loss, cv_loss=cv_loss)
+        torch.save(package, path)
+
+    @classmethod
+    def load(cls, path):
+        package = torch.load(path, map_location=lambda storage, loc: storage)
+        model = cls.load_model_from_package(package)
+        return model
+
+    @classmethod
+    def load_model_from_package(cls, package):
+        model = cls()
+        model.load_state_dict(package['state_dict'])
+        return model
+
+    @classmethod
+    def load_best_model(cls, models_dir):
+        dir_id = 'demucs'
+        dir_path = os.path.join(models_dir, dir_id)
+        best_path = glob2.glob(dir_path + '/best_*')[0]
+        return cls.load(best_path)
+
+    @staticmethod
+    def serialize(model, optimizer, epoch, tr_loss=None, cv_loss=None):
+        package = {
+            'state_dict': model.state_dict(),
+            'optim_dict': optimizer.state_dict(),
+            'epoch': epoch,
+        }
+        if tr_loss is not None:
+            package['tr_loss'] = tr_loss
+            package['cv_loss'] = cv_loss
+        return package
+
+    @classmethod
+    def encode_model_identifier(cls,
+                                metric_name,
+                                metric_value):
+        ts = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%s")
+
+        file_identifiers = [metric_name, str(metric_value)]
+        model_identifier = "_".join(file_identifiers + [ts])
+
+        return model_identifier
+
+    @classmethod
+    def decode_model_identifier(cls,
+                                model_identifier):
+        identifiers = model_identifier.split("_")
+        ts = identifiers[-1].split('.pt')[0]
+        [metric_name, metric_value] = identifiers[:-1]
+        return metric_name, float(metric_value), ts
+
+    @classmethod
+    def encode_dir_name(cls):
+        model_dir_name = 'demucs'
+        return model_dir_name
+
+    @classmethod
+    def get_best_checkpoint_path(cls, model_dir_path):
+        best_paths = glob2.glob(model_dir_path + '/best_*')
+        if best_paths:
+            return best_paths[0]
+        else:
+            return None
+
+    @classmethod
+    def get_current_checkpoint_path(cls, model_dir_path):
+        current_paths = glob2.glob(model_dir_path + '/current_*')
+        if current_paths:
+            return current_paths[0]
+        else:
+            return None
+
+    @classmethod
+    def save_if_best(cls, save_dir, model, optimizer, epoch,
+                     tr_loss, cv_loss, cv_loss_name):
+
+        model_dir_path = os.path.join(save_dir, cls.encode_dir_name())
+        if not os.path.exists(model_dir_path):
+            print("Creating non-existing model states directory... {}"
+                  "".format(model_dir_path))
+            os.makedirs(model_dir_path)
+
+        current_path = cls.get_current_checkpoint_path(model_dir_path)
+        models_to_remove = []
+        if current_path is not None:
+            models_to_remove = [current_path]
+        best_path = cls.get_best_checkpoint_path(model_dir_path)
+        file_id = cls.encode_model_identifier(cv_loss_name, cv_loss)
+
+        if best_path is not None:
+            best_fileid = os.path.basename(best_path)
+            _, best_metric_value, _ = cls.decode_model_identifier(
+                best_fileid.split('best_')[-1])
+        else:
+            best_metric_value = -99999999
+
+        if float(cv_loss) > float(best_metric_value):
+            if best_path is not None:
+                models_to_remove.append(best_path)
+            save_path = os.path.join(model_dir_path, 'best_' + file_id + '.pt')
+            cls.save(model, save_path, optimizer, epoch,
+                     tr_loss=tr_loss, cv_loss=cv_loss)
+
+        save_path = os.path.join(model_dir_path, 'current_' + file_id + '.pt')
+        cls.save(model, save_path, optimizer, epoch,
+                 tr_loss=tr_loss, cv_loss=cv_loss)
+
+        try:
+            for model_path in models_to_remove:
+                os.remove(model_path)
+        except:
+            print("Warning: Error in removing {} ...".format(current_path))
 
 
 if __name__ == "__main__":
