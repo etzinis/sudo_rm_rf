@@ -127,16 +127,6 @@ elif hparams['model_type'] == 'eunet':
         L=hparams['n_kernel'],
         N=hparams['n_basis'],
         S=2)
-elif hparams['model_type'] == 'eunet':
-    model = eunet.EETPTDCN(
-        B=hparams['B'],
-        H=hparams['H'],
-        P=hparams['P'],
-        R=hparams['R'],
-        X=hparams['X'],
-        L=hparams['n_kernel'],
-        N=hparams['n_basis'],
-        S=2)
 else:
     raise NotImplementedError(
         'Tasnet type: {} is not yet available.'.format(hparams['model_type']))

@@ -31,7 +31,7 @@ def get_args():
                                  'TIMITMF8K', 'WSJ2MIX8KNORMPAD',
                                  'AUGMENTED_WSJMIX', 'AUGMENTED_ESC50'])
     parser.add_argument("-elp", "--experiment_logs_path", type=str,
-                        help="""Path for logging experiment's audio.""",
+                        help="""Path for experiment's checkpoints.""",
                         default=None)
     parser.add_argument("-mlp", "--metrics_logs_path", type=str,
                         help="""Path for logging metrics.""",
