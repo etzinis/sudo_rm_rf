@@ -312,6 +312,13 @@ class Demucs(nn.Module):
         best_path = glob2.glob(dir_path + '/best_*')[0]
         return cls.load(best_path)
 
+    @classmethod
+    def load_latest_model(cls, models_dir):
+        dir_id = 'demucs'
+        dir_path = os.path.join(models_dir, dir_id)
+        latest_path = glob2.glob(dir_path + '/current_*')[0]
+        return cls.load(latest_path)
+
     @staticmethod
     def serialize(model, optimizer, epoch, tr_loss=None, cv_loss=None):
         package = {

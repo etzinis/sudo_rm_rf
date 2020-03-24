@@ -14,6 +14,9 @@ import math
 from numpy.lib import stride_tricks
 # from utils import overlap_and_add, device
 from torch.autograd import Variable
+import glob2
+import datetime
+import os, sys
 
 EPS = 1e-8
 
@@ -342,7 +345,8 @@ class BF_module(DPRNN_base):
 
 # base module for FaSNet
 class FaSNet_base(nn.Module):
-    def __init__(self, enc_dim, feature_dim, hidden_dim, layer, segment_size=250,
+    def __init__(self, enc_dim=256, feature_dim=64, hidden_dim=128,
+                 layer=6, segment_size=250,
                  nspk=2, win_len=2):
         super(FaSNet_base, self).__init__()
 
@@ -368,6 +372,132 @@ class FaSNet_base(nn.Module):
         # [B, N, L] -> [B, E, L]
         self.mask_conv1x1 = nn.Conv1d(self.feature_dim, self.enc_dim, 1, bias=False)
         self.decoder = Decoder(enc_dim, win_len)
+
+    @classmethod
+    def save(cls, model, path, optimizer, epoch,
+             tr_loss=None, cv_loss=None):
+        package = cls.serialize(model, optimizer, epoch,
+                                tr_loss=tr_loss, cv_loss=cv_loss)
+        torch.save(package, path)
+
+    @classmethod
+    def load(cls, path):
+        package = torch.load(path, map_location=lambda storage, loc: storage)
+        model = cls.load_model_from_package(package)
+        return model
+
+    @classmethod
+    def load_model_from_package(cls, package):
+        model = cls()
+        model.load_state_dict(package['state_dict'])
+        return model
+
+    @classmethod
+    def load_best_model(cls, models_dir):
+        dir_id = 'dprnn'
+        dir_path = os.path.join(models_dir, dir_id)
+        best_path = glob2.glob(dir_path + '/best_*')[0]
+        return cls.load(best_path)
+
+    @classmethod
+    def load_latest_model(cls, models_dir):
+        dir_id = 'dprnn'
+        dir_path = os.path.join(models_dir, dir_id)
+        latest_path = glob2.glob(dir_path + '/current_*')[0]
+        return cls.load(latest_path)
+
+    @staticmethod
+    def serialize(model, optimizer, epoch, tr_loss=None, cv_loss=None):
+        package = {
+            'state_dict': model.state_dict(),
+            'optim_dict': optimizer.state_dict(),
+            'epoch': epoch,
+        }
+        if tr_loss is not None:
+            package['tr_loss'] = tr_loss
+            package['cv_loss'] = cv_loss
+        return package
+
+    @classmethod
+    def encode_model_identifier(cls,
+                                metric_name,
+                                metric_value):
+        ts = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%s")
+
+        file_identifiers = [metric_name, str(metric_value)]
+        model_identifier = "_".join(file_identifiers + [ts])
+
+        return model_identifier
+
+    @classmethod
+    def decode_model_identifier(cls,
+                                model_identifier):
+        identifiers = model_identifier.split("_")
+        ts = identifiers[-1].split('.pt')[0]
+        [metric_name, metric_value] = identifiers[:-1]
+        return metric_name, float(metric_value), ts
+
+    @classmethod
+    def encode_dir_name(cls):
+        model_dir_name = 'dprnn'
+        return model_dir_name
+
+    @classmethod
+    def get_best_checkpoint_path(cls, model_dir_path):
+        best_paths = glob2.glob(model_dir_path + '/best_*')
+        if best_paths:
+            return best_paths[0]
+        else:
+            return None
+
+    @classmethod
+    def get_current_checkpoint_path(cls, model_dir_path):
+        current_paths = glob2.glob(model_dir_path + '/current_*')
+        if current_paths:
+            return current_paths[0]
+        else:
+            return None
+
+    @classmethod
+    def save_if_best(cls, save_dir, model, optimizer, epoch,
+                     tr_loss, cv_loss, cv_loss_name):
+
+        model_dir_path = os.path.join(save_dir, cls.encode_dir_name())
+        if not os.path.exists(model_dir_path):
+            print("Creating non-existing model states directory... {}"
+                  "".format(model_dir_path))
+            os.makedirs(model_dir_path)
+
+        current_path = cls.get_current_checkpoint_path(model_dir_path)
+        models_to_remove = []
+        if current_path is not None:
+            models_to_remove = [current_path]
+        best_path = cls.get_best_checkpoint_path(model_dir_path)
+        file_id = cls.encode_model_identifier(cv_loss_name, cv_loss)
+
+        if best_path is not None:
+            best_fileid = os.path.basename(best_path)
+            _, best_metric_value, _ = cls.decode_model_identifier(
+                best_fileid.split('best_')[-1])
+        else:
+            best_metric_value = -99999999
+
+        if float(cv_loss) > float(best_metric_value):
+            if best_path is not None:
+                models_to_remove.append(best_path)
+            save_path = os.path.join(model_dir_path, 'best_' + file_id + '.pt')
+            cls.save(model, save_path, optimizer, epoch,
+                     tr_loss=tr_loss, cv_loss=cv_loss)
+
+        save_path = os.path.join(model_dir_path, 'current_' + file_id + '.pt')
+        cls.save(model, save_path, optimizer, epoch,
+                 tr_loss=tr_loss, cv_loss=cv_loss)
+
+        try:
+            for model_path in models_to_remove:
+                os.remove(model_path)
+        except:
+            print("Warning: Error in removing {} ...".format(current_path))
 
     def pad_input(self, input, window):
         """
