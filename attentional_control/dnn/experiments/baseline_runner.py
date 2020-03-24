@@ -38,12 +38,6 @@ args = parser.get_args()
 hparams = hparams_parser.get_hparams_from_args(args)
 dataset_specific_params.update_hparams(hparams)
 
-if hparams["log_path"] is not None:
-    audio_logger = log_audio.AudioLogger(hparams["log_path"],
-                                         hparams["fs"],
-                                         hparams["bs"],
-                                         hparams["n_sources"])
-
 experiment = Experiment(API_KEY, project_name=hparams["project_name"])
 experiment.log_parameters(hparams)
 
@@ -89,30 +83,14 @@ tr_val_losses = dict([
                                                return_individual_results=True))])
 
 if hparams['model_type'] == 'baseline_dprnn':
-    model = dprnn.FaSNet_base(
-        enc_dim=256, feature_dim=64, hidden_dim=128,
-        layer=6, segment_size=250, nspk=2, win_len=2)
+    model_class = dprnn.FaSNet_base
+    model = dprnn.FaSNet_base()
 elif hparams['model_type'] == 'baseline_original_convtasnet':
-    model = original_convtasnet.TasNet(enc_dim=512, feature_dim=128,
-                                       sr=hparams["fs"],
-                                       win=hparams['selected_timelength'],
-                                       layer=8, stack=3, kernel=3,
-                                       num_spk=hparams["n_sources"],
-                                       causal=False)
+    model_class = original_convtasnet.TasNet
+    model = original_convtasnet.TasNet()
 elif hparams['model_type'] == 'baseline_demucs':
-    model = demucs.Demucs(sources=2,
-                     audio_channels=1,
-                     channels=64,
-                     depth=6,
-                     rewrite=True,
-                     glu=True,
-                     upsample=False,
-                     rescale=0.1,
-                     kernel_size=8,
-                     stride=4,
-                     growth=2.,
-                     lstm_layers=2,
-                     context=3)
+    model_class = demucs.Demucs
+    model = demucs.Demucs()
 else:
     raise NotImplementedError(
         'Baseline model type: {} is not yet available.'.format(
@@ -181,7 +159,6 @@ for i in range(hparams['n_epochs']):
             lr_scheduler.step()
             warmup_scheduler.dampen()
         res_dic[back_loss_tr_loss_name]['acc'].append(l.item())
-        break
 
 
     if hparams['reduce_lr_every'] > 0:
@@ -207,12 +184,7 @@ for i in range(hparams['n_epochs']):
                                   clean_wavs,
                                   initial_mixtures=m1wavs.unsqueeze(1))
                     res_dic[loss_name]['acc'] += l.tolist()
-                break
 
-            if hparams["log_path"] is not None:
-                audio_logger.log_batch(rec_sources_wavs,
-                                       clean_wavs,
-                                       m1wavs)
         val_step += 1
 
     if tr_val_losses.values():
@@ -229,7 +201,6 @@ for i in range(hparams['n_epochs']):
                                   clean_wavs,
                                   initial_mixtures=m1wavs.unsqueeze(1))
                     res_dic[loss_name]['acc'] += l.tolist()
-                break
 
 
     if hparams["metrics_log_path"] is not None:
@@ -241,10 +212,10 @@ for i in range(hparams['n_epochs']):
                                                         tr_step,
                                                         val_step)
 
-    # model_class.save_if_best(
-    #     hparams['tn_mask_dir'], model.module, opt, tr_step,
-    #     res_dic[back_loss_tr_loss_name]['mean'],
-    #     res_dic[val_loss_name]['mean'], val_loss_name.replace("_", ""))
+    model_class.save_if_best(
+        hparams['log_path'], model.module, opt, tr_step,
+        res_dic[back_loss_tr_loss_name]['mean'],
+        res_dic[val_loss_name]['mean'], val_loss_name.replace("_", ""))
     for loss_name in res_dic:
         res_dic[loss_name]['acc'] = []
     pprint(res_dic)
