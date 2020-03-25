@@ -498,12 +498,13 @@ if __name__ == "__main__":
     import os
     model = TasNet()
 
-    # print('Try to fit the model in memory')
-    os.environ['CUDA_VISIBLE_DEVICES'] = '2'
-    model = model.cuda()
-    dummy_input = torch.rand(1, 1, 32000).cuda()
-    # dummy_input = torch.rand(1, 1, 32000)
-    # print(model.summary())
+    print('Testing Forward pass')
+    if sys.argv[1] == 'cuda':
+        os.environ['CUDA_VISIBLE_DEVICES'] = sys.argv[2]
+        model = model.cuda()
+        dummy_input = torch.rand(1, 1, 32000).cuda()
+    elif sys.argv[1] == 'cpu':
+        dummy_input = torch.rand(1, 1, 32000)
 
     print('Testing Forward pass')
 

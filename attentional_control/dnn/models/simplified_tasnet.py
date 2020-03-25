@@ -611,7 +611,7 @@ class ResidualTN(nn.Module):
 
 if __name__ == "__main__":
     import torch
-    import os
+    import os, sys
     model = TDCN(
         B=256,
         H=512,
@@ -622,14 +622,13 @@ if __name__ == "__main__":
         N=256,
         S=2)
 
-    # print('Try to fit the model in memory')
-    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
-    model = model.cuda()
-    # print(model.summary())
-
     print('Testing Forward pass')
-    dummy_input = torch.rand(1, 1, 32000)
-    dummy_input = torch.rand(1, 1, 32000).cuda()
+    if sys.argv[1] == 'cuda':
+        os.environ['CUDA_VISIBLE_DEVICES'] = sys.argv[2]
+        model = model.cuda()
+        dummy_input = torch.rand(1, 1, 32000).cuda()
+    elif sys.argv[1] == 'cpu':
+        dummy_input = torch.rand(1, 1, 32000)
 
     # import pdb; pdb.set_trace()
 

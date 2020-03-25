@@ -496,13 +496,13 @@ class CepstralNorm(nn.Module):
 
 if __name__ == "__main__":
     import torch
-    import os
+    import os, sys
     model = EETPTDCN(
         B=128,
         H=512,
         P=3,
         R=16,
-        X=8,
+        X=4,
         L=21,
         N=512,
         S=2)
@@ -511,10 +511,13 @@ if __name__ == "__main__":
     # print(model.summary())
 
     print('Testing Forward pass')
-    os.environ['CUDA_VISIBLE_DEVICES'] = '2'
-    model = model.cuda()
-    dummy_input = torch.rand(1, 1, 32000).cuda()
-    # dummy_input = torch.rand(1, 1, 32000)
+    if sys.argv[1] == 'cuda':
+        os.environ['CUDA_VISIBLE_DEVICES'] = sys.argv[2]
+        model = model.cuda()
+        dummy_input = torch.rand(1, 1, 32000).cuda()
+    elif sys.argv[1] == 'cpu':
+        dummy_input = torch.rand(1, 1, 32000)
+
 
     # import pdb; pdb.set_trace()
 

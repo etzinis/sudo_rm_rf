@@ -553,13 +553,13 @@ if __name__ == "__main__":
     model = FaSNet_base(
         enc_dim=256, feature_dim=64, hidden_dim=128,
         layer=6, segment_size=250, nspk=2, win_len=2)
-    # print('Try to fit the model in memory')
-    os.environ['CUDA_VISIBLE_DEVICES'] = '2'
-    model = model.cuda()
-    # print(model.summary())
-
     print('Testing Forward pass')
-    dummy_input = torch.rand(1, 32000).cuda()
+    if sys.argv[1] == 'cuda':
+        os.environ['CUDA_VISIBLE_DEVICES'] = sys.argv[2]
+        model = model.cuda()
+        dummy_input = torch.rand(1, 32000).cuda()
+    elif sys.argv[1] == 'cpu':
+        dummy_input = torch.rand(1, 32000)
 
     # import pdb; pdb.set_trace()
 
