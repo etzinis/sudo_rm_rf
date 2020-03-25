@@ -164,7 +164,7 @@ for i in range(hparams['n_epochs']):
     if hparams['reduce_lr_every'] > 0:
         if tr_step % hparams['reduce_lr_every'] == 0:
             new_lr = (hparams['learning_rate']
-                      / (hparams['divide_lr_by']))
+                      (hparams['divide_lr_by'] ** (tr_step // hparams['reduce_lr_every'])))
             print('Reducing Learning rate to: {}'.format(new_lr))
             for param_group in opt.param_groups:
                 param_group['lr'] = new_lr
