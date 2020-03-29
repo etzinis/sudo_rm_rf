@@ -239,7 +239,8 @@ for i in range(hparams['n_epochs']):
     model_class.save_if_best(
         hparams['log_path'], model.module, opt, tr_step,
         res_dic[back_loss_tr_loss_name]['mean'],
-        res_dic[val_loss_name]['mean'], val_loss_name.replace("_", ""))
+        res_dic[val_loss_name]['mean'], val_loss_name.replace("_", ""),
+        cometml_experiment=experiment)
     for loss_name in res_dic:
         res_dic[loss_name]['acc'] = []
     pprint(res_dic)
