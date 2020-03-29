@@ -394,7 +394,7 @@ class EETPTDCN(nn.Module):
     @classmethod
     def save_if_best(cls, save_dir, model, optimizer, epoch,
                      tr_loss, cv_loss, cv_loss_name,
-                     cometml_experiment=None):
+                     cometml_experiment=None, model_name='eetdcn'):
 
         model_dir_path = os.path.join(save_dir, cls.encode_dir_name(model))
         if not os.path.exists(model_dir_path):
@@ -427,7 +427,7 @@ class EETPTDCN(nn.Module):
 
             if cometml_experiment is not None:
                 print('Trying to upload best model to cometml...')
-                cometml_experiment.log_model('eetp_tdcn',
+                cometml_experiment.log_model(model_name,
                                              save_path,
                                              file_name='best_model',
                                              overwrite=True,
@@ -439,7 +439,7 @@ class EETPTDCN(nn.Module):
                  tr_loss=tr_loss, cv_loss=cv_loss)
         if cometml_experiment is not None:
             print('Trying to upload current model to cometml...')
-            cometml_experiment.log_model('eetp_tdcn',
+            cometml_experiment.log_model(model_name,
                                          save_path,
                                          file_name=current_model_id,
                                          overwrite=True,
