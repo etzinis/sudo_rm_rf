@@ -22,7 +22,7 @@ import attentional_control.dnn.experiments.utils.dataset_specific_params \
 import attentional_control.dnn.losses.sisdr as sisdr_lib
 import attentional_control.dnn.utils.cometml_loss_report as cometml_report
 import attentional_control.dnn.utils.metrics_logger as metrics_logger
-import attentional_control.dnn.utils.log_audio as log_audio
+import attentional_control.dnn.utils.cometml_log_audio as cometml_audio_logger
 import attentional_control.dnn.experiments.utils.cmd_args_parser as parser
 import attentional_control.dnn.models.simplified_tasnet as ptasent
 import attentional_control.dnn.models.eetp_tdcn as eetptdcn
@@ -35,11 +35,9 @@ args = parser.get_args()
 hparams = hparams_parser.get_hparams_from_args(args)
 dataset_specific_params.update_hparams(hparams)
 
-if hparams["log_path"] is not None:
-    audio_logger = log_audio.AudioLogger(hparams["log_path"],
-                                         hparams["fs"],
-                                         hparams["bs"],
-                                         hparams["n_sources"])
+if hparams["log_audio"]:
+    audio_logger = cometml_audio_logger.AudioLogger(
+        fs=hparams["fs"], bs=hparams["bs"], n_sources=hparams["n_sources"])
 
 experiment = Experiment(API_KEY, project_name=hparams["project_name"])
 experiment.log_parameters(hparams)
@@ -108,17 +106,8 @@ elif hparams['model_type'] == 'residual':
         N=hparams['n_basis'],
         S=2)
 elif hparams['model_type'] == 'eetp_tdcn':
+    model_class = eetptdcn.EETPTDCN
     model = eetptdcn.EETPTDCN(
-        B=hparams['B'],
-        H=hparams['H'],
-        P=hparams['P'],
-        R=hparams['R'],
-        X=hparams['X'],
-        L=hparams['n_kernel'],
-        N=hparams['n_basis'],
-        S=2)
-elif hparams['model_type'] == 'eunet':
-    model = eunet.EETPTDCN(
         B=hparams['B'],
         H=hparams['H'],
         P=hparams['P'],
@@ -191,6 +180,7 @@ for i in range(hparams['n_epochs']):
             lr_scheduler.step()
             warmup_scheduler.dampen()
         res_dic[back_loss_tr_loss_name]['acc'].append(l.item())
+        break
     tr_step += 1
 
     if hparams['reduce_lr_every'] > 0:
@@ -214,11 +204,13 @@ for i in range(hparams['n_epochs']):
                                   clean_wavs,
                                   initial_mixtures=m1wavs)
                     res_dic[loss_name]['acc'] += l.tolist()
-            if hparams["log_path"] is not None:
-                audio_logger.log_batch(rec_sources_wavs,
-                                       clean_wavs,
-                                       m1wavs)
-        val_step += 1
+
+                break
+            if hparams["log_audio"]:
+                audio_logger.log_batch(rec_sources_wavs, clean_wavs, m1wavs,
+                                       experiment, step=val_step)
+
+    val_step += 1
 
     if tr_val_losses.values():
         model.eval()
@@ -233,6 +225,8 @@ for i in range(hparams['n_epochs']):
                                   clean_wavs,
                                   initial_mixtures=m1wavs)
                     res_dic[loss_name]['acc'] += l.tolist()
+
+                break
     if hparams["metrics_log_path"] is not None:
         metrics_logger.log_metrics(res_dic, hparams["metrics_log_path"],
                                    tr_step, val_step)
@@ -242,10 +236,10 @@ for i in range(hparams['n_epochs']):
                                                         tr_step,
                                                         val_step)
 
-    # model_class.save_if_best(
-    #     hparams['tn_mask_dir'], model.module, opt, tr_step,
-    #     res_dic[back_loss_tr_loss_name]['mean'],
-    #     res_dic[val_loss_name]['mean'], val_loss_name.replace("_", ""))
+    model_class.save_if_best(
+        hparams['log_path'], model.module, opt, tr_step,
+        res_dic[back_loss_tr_loss_name]['mean'],
+        res_dic[val_loss_name]['mean'], val_loss_name.replace("_", ""))
     for loss_name in res_dic:
         res_dic[loss_name]['acc'] = []
     pprint(res_dic)
