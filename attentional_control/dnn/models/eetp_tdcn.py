@@ -393,7 +393,8 @@ class EETPTDCN(nn.Module):
 
     @classmethod
     def save_if_best(cls, save_dir, model, optimizer, epoch,
-                     tr_loss, cv_loss, cv_loss_name):
+                     tr_loss, cv_loss, cv_loss_name,
+                     cometml_experiment=None):
 
         model_dir_path = os.path.join(save_dir, cls.encode_dir_name(model))
         if not os.path.exists(model_dir_path):
@@ -418,14 +419,31 @@ class EETPTDCN(nn.Module):
         if float(cv_loss) > float(best_metric_value):
             if best_path is not None:
                 models_to_remove.append(best_path)
-            save_path = os.path.join(model_dir_path, 'best_' + file_id + '.pt')
+            best_model_id = 'best_' + file_id + '.pt'
+            save_path = os.path.join(model_dir_path, best_model_id)
             cls.save(model, save_path, optimizer, epoch,
                      tr_loss=tr_loss, cv_loss=cv_loss)
             print('===> Saved best model at: {}\n'.format(save_path))
 
-        save_path = os.path.join(model_dir_path, 'current_' + file_id + '.pt')
+            if cometml_experiment is not None:
+                print('Trying to upload best model to cometml...')
+                cometml_experiment.log_model('eetp_tdcn',
+                                             save_path,
+                                             file_name='best_model',
+                                             overwrite=True,
+                                             metadata=None, copy_to_tmp=True)
+
+        current_model_id = 'current_' + file_id + '.pt'
+        save_path = os.path.join(model_dir_path, current_model_id)
         cls.save(model, save_path, optimizer, epoch,
                  tr_loss=tr_loss, cv_loss=cv_loss)
+        if cometml_experiment is not None:
+            print('Trying to upload current model to cometml...')
+            cometml_experiment.log_model('eetp_tdcn',
+                                         save_path,
+                                         file_name=current_model_id,
+                                         overwrite=True,
+                                         metadata=None, copy_to_tmp=True)
 
         try:
             for model_path in models_to_remove:
