@@ -36,4 +36,7 @@ def log_metrics(metrics_dict, dirpath, tr_step, val_step):
         else:
             NotImplementedError('I am not sure where to put this '
                                 'metric: {}'.format(metric_name))
+
         np.save(os.path.join(this_metric_folder, filename), values)
+        print('Logged metrics at: {}'.format(
+            os.path.join(this_metric_folder, filename)))
