@@ -43,6 +43,11 @@ class AudioLogger(object):
         true_sources = t_batch.detach().cpu().numpy()
         pred_sources = pr_batch.detach().cpu().numpy()
 
+        # Normalize the audio
+        mixture = mixture / np.abs(mixture).max(-1, keepdims=True)
+        true_sources = true_sources / np.abs(true_sources).max(-1, keepdims=True)
+        pred_sources = pred_sources / np.abs(pred_sources).max(-1, keepdims=True)
+
         for b_ind in range(self.bs):
             experiment.log_audio(mixture[b_ind].squeeze(),
                                  sample_rate=self.fs,
@@ -50,15 +55,17 @@ class AudioLogger(object):
                                  metadata=None, overwrite=False,
                                  copy_to_tmp=True, step=step)
             for s_ind in range(self.n_sources):
-                experiment.log_audio(true_sources[b_ind].squeeze(),
-                                     sample_rate=self.fs,
-                                     file_name='batch_{}_source_{}_true'.format(
-                                         b_ind+1, s_ind+1),
-                                     metadata=None, overwrite=False,
-                                     copy_to_tmp=True, step=step)
-                experiment.log_audio(pred_sources[b_ind].squeeze(),
-                                     sample_rate=self.fs,
-                                     file_name='batch_{}_source_{}_est'.format(
-                                         b_ind+1, s_ind+1),
-                                     metadata=None, overwrite=False,
-                                     copy_to_tmp=True, step=step)
+                experiment.log_audio(
+                    true_sources[b_ind][s_ind].squeeze(),
+                    sample_rate=self.fs,
+                    file_name='batch_{}_source_{}_true.wav'.format(b_ind+1,
+                                                                   s_ind+1),
+                    metadata=None, overwrite=False,
+                    copy_to_tmp=True, step=step)
+                experiment.log_audio(
+                    pred_sources[b_ind][s_ind].squeeze(),
+                    sample_rate=self.fs,
+                    file_name='batch_{}_source_{}_est.wav'.format(b_ind+1,
+                                                                  s_ind+1),
+                    metadata=None, overwrite=False,
+                    copy_to_tmp=True, step=step)
