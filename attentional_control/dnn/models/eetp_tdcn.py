@@ -170,7 +170,7 @@ class UpsamplingEESP(nn.Module):
 
         self.spp_dw = nn.ModuleList()
 
-        self.spp_dw.append(DilatedConvNorm(H, H, kSize=3,
+        self.spp_dw.append(DilatedConvNorm(H, H, kSize=5,
                                            stride=1,
                                            groups=H, d=1))
 
@@ -241,7 +241,7 @@ class EETPTDCN(nn.Module):
         # self.sm = nn.ModuleList([
         #     EESP(nIn=B, nOut=B, stride=1, k=4, dilation_factor=1)
         #     for r in range(R)])
-        self.sm = nn.ModuleList([
+        self.sm = nn.Sequential(*[
             UpsamplingEESP(B=B, H=H, stride=1, k=X, dilation_factor=1)
             for r in range(R)])
 
@@ -278,8 +278,7 @@ class EETPTDCN(nn.Module):
         # Separation module
         x = self.ln(x)
         x = self.l1(x)
-        for l in self.sm:
-            x = l(x)
+        x = self.sm(x)
 
         if self.B != self.N:
             # x = self.ln_bef_out_reshape(x)
@@ -422,6 +421,7 @@ class EETPTDCN(nn.Module):
             save_path = os.path.join(model_dir_path, 'best_' + file_id + '.pt')
             cls.save(model, save_path, optimizer, epoch,
                      tr_loss=tr_loss, cv_loss=cv_loss)
+            print('===> Saved best model at: {}\n'.format(save_path))
 
         save_path = os.path.join(model_dir_path, 'current_' + file_id + '.pt')
         cls.save(model, save_path, optimizer, epoch,
