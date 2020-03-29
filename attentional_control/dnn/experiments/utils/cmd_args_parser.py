@@ -30,12 +30,16 @@ def get_args():
                         choices=['WSJ2MIX8K', 'WSJ2MIX8KPAD',
                                  'TIMITMF8K', 'WSJ2MIX8KNORMPAD',
                                  'AUGMENTED_WSJMIX', 'AUGMENTED_ESC50'])
+
+    # Logging experiments
     parser.add_argument("-elp", "--experiment_logs_path", type=str,
                         help="""Path for experiment's checkpoints.""",
                         default=None)
     parser.add_argument("-mlp", "--metrics_logs_path", type=str,
                         help="""Path for logging metrics.""",
                         default=None)
+    parser.add_argument('--log_audio', action='store_true', default=False)
+
     parser.add_argument("--n_train", type=int,
                         help="""Reduce the number of training 
                             samples to this number.""", default=None)
