@@ -9,7 +9,8 @@ import os
 import numpy as np
 
 
-def log_metrics(metrics_dict, dirpath, tr_step, val_step):
+def log_metrics(metrics_dict, dirpath, tr_step, val_step,
+                cometml_experiment=None):
     """Logs the accumulative individual results from a dictionary of metrics
 
     Args:
@@ -30,13 +31,20 @@ def log_metrics(metrics_dict, dirpath, tr_step, val_step):
         values = metric_data['acc']
         values = np.array(values)
         if metric_name.startswith('tr_'):
-            filename = 'epoch_{}'.format(tr_step)
+            this_step = tr_step
         elif metric_name.startswith('val_'):
-            filename = 'epoch_{}'.format(val_step)
+            this_step = val_step
         else:
             NotImplementedError('I am not sure where to put this '
                                 'metric: {}'.format(metric_name))
+        filename = 'epoch_{}.npy'.format(this_step)
+        savepath = os.path.join(this_metric_folder, filename)
+        np.save(savepath, values)
 
-        np.save(os.path.join(this_metric_folder, filename), values)
-        print('Logged metrics at: {}'.format(
-            os.path.join(this_metric_folder, filename)))
+        if cometml_experiment is not None:
+            cometml_experiment.log_asset(savepath,
+                                         file_name=metric_name,
+                                         overwrite=False, step=this_step,
+                                         metadata=None, copy_to_tmp=True)
+
+    print('Logged metrics at: {}'.format(dirpath))

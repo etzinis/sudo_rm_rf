@@ -229,7 +229,8 @@ for i in range(hparams['n_epochs']):
                 break
     if hparams["metrics_log_path"] is not None:
         metrics_logger.log_metrics(res_dic, hparams["metrics_log_path"],
-                                   tr_step, val_step)
+                                   tr_step, val_step,
+                                   cometml_experiment=experiment)
 
     res_dic = cometml_report.report_losses_mean_and_std(res_dic,
                                                         experiment,
