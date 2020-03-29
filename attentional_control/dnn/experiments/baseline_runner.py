@@ -24,7 +24,7 @@ import attentional_control.dnn.experiments.utils.dataset_specific_params \
 import attentional_control.dnn.losses.sisdr as sisdr_lib
 import attentional_control.dnn.utils.cometml_loss_report as cometml_report
 import attentional_control.dnn.utils.metrics_logger as metrics_logger
-import attentional_control.dnn.utils.log_audio as log_audio
+import attentional_control.dnn.utils.cometml_log_audio as cometml_audio_logger
 import attentional_control.dnn.experiments.utils.cmd_args_parser as parser
 import attentional_control.dnn.models.dprnn as dprnn
 import attentional_control.dnn.models.demucs as demucs
@@ -37,6 +37,10 @@ import attentional_control.dnn.experiments.utils.hparams_parser as \
 args = parser.get_args()
 hparams = hparams_parser.get_hparams_from_args(args)
 dataset_specific_params.update_hparams(hparams)
+
+if hparams["log_audio"]:
+    audio_logger = cometml_audio_logger.AudioLogger(
+        fs=hparams["fs"], bs=hparams["bs"], n_sources=hparams["n_sources"])
 
 experiment = Experiment(API_KEY, project_name=hparams["project_name"])
 experiment.log_parameters(hparams)
@@ -185,6 +189,10 @@ for i in range(hparams['n_epochs']):
                                   initial_mixtures=m1wavs.unsqueeze(1))
                     res_dic[loss_name]['acc'] += l.tolist()
 
+            if hparams["log_audio"]:
+                audio_logger.log_batch(rec_sources_wavs, clean_wavs, m1wavs,
+                                       experiment, step=val_step)
+
         val_step += 1
 
     if tr_val_losses.values():
@@ -202,10 +210,10 @@ for i in range(hparams['n_epochs']):
                                   initial_mixtures=m1wavs.unsqueeze(1))
                     res_dic[loss_name]['acc'] += l.tolist()
 
-
     if hparams["metrics_log_path"] is not None:
         metrics_logger.log_metrics(res_dic, hparams["metrics_log_path"],
-                                   tr_step, val_step)
+                                   tr_step, val_step,
+                                   cometml_experiment=experiment)
 
     res_dic = cometml_report.report_losses_mean_and_std(res_dic,
                                                         experiment,
@@ -215,7 +223,8 @@ for i in range(hparams['n_epochs']):
     model_class.save_if_best(
         hparams['log_path'], model.module, opt, tr_step,
         res_dic[back_loss_tr_loss_name]['mean'],
-        res_dic[val_loss_name]['mean'], val_loss_name.replace("_", ""))
+        res_dic[val_loss_name]['mean'], val_loss_name.replace("_", ""),
+        cometml_experiment=experiment)
     for loss_name in res_dic:
         res_dic[loss_name]['acc'] = []
     pprint(res_dic)
