@@ -66,6 +66,9 @@ def get_args():
     parser.add_argument("-r", "--repeats", type=int,
                         help="""The number of repetitions of the forward or
                         the backward pass""", default=1)
+    parser.add_argument('--run_all', action='store_true',
+                        help='Runs all measures for the selected device.',
+                        default=False)
     return parser.parse_args()
 
 
@@ -208,6 +211,7 @@ def measure_gpu_memory(model, model_class, mode='forward',
 
 def main_analyzer(args):
     print('=' * 20)
+    print('Selected Device: {}'.format(args.device))
     print('Selected Model Type: {}'.format(args.model_type))
     print('Selected Batch Size: {}'.format(args.batch_size))
     print('Selected Input Samples: {}'.format(args.input_samples))
@@ -259,7 +263,17 @@ def main_analyzer(args):
 
 if __name__ == "__main__":
     args = get_args()
-    main_analyzer(args)
+    if args.run_all:
+        new_args = args
+        new_args.measure = ['forward', 'trainable_parameters']
+        if args.device == 'gpu':
+            new_args.measure.append('memory_gpu')
+            new_args.measure.append('backward')
+        else:
+            new_args.measure.append('forward_macs')
+        main_analyzer(new_args)
+    else:
+        main_analyzer(args)
 
 
 
