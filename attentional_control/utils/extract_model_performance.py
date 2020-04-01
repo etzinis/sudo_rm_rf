@@ -36,8 +36,10 @@ def get_args():
                         choices=['forward',
                                  'backward',
                                  'trainable_parameters',
-                                 'macs',
-                                 'memory'])
+                                 'forward_macs',
+                                 'memory_cpu',
+                                 'memory_gpu'
+                                 ])
     parser.add_argument("--input_samples", type=int,
                         help="""Number of input time samples.""", default=8000)
     parser.add_argument("-cad", "--cuda_available_devices", type=str, nargs="+",
@@ -59,6 +61,8 @@ def get_args():
                         help="""The number of samples in each batch. 
                             Warning: Cannot be less than the number of 
                             the validation samples""", default=1)
+    parser.add_argument("--n_sources", type=int,
+                        help="""Number of sources in mixtures""", default=2)
     parser.add_argument("-r", "--repeats", type=int,
                         help="""The number of repetitions of the forward or
                         the backward pass""", default=1)
@@ -98,7 +102,7 @@ def create_input_for_model(batch_size, input_samples, model_type):
         dummy_input = torch.rand(batch_size, input_samples)
     else:
         dummy_input = torch.rand(batch_size, 1, input_samples)
-    proper_input = torch.rand(batch_size, 1, input_samples)
+    proper_input = torch.rand(batch_size, input_samples)
     return dummy_input, proper_input
 
 
@@ -111,32 +115,38 @@ def count_parameters(model):
     for f in model.parameters():
         if f.requires_grad:
             numparams += f.numel()
-    print('Trainable Parameters: {}'.format(round(numparams / 10**6, 3)))
+    print('Trainable Parameters (millions): {}'.format(
+        round(numparams / 10**6, 3)))
     return numparams
 
 
-def count_macs_for_forward(model, dummy_input):
+def count_macs_for_forward(model, model_class, mode='cpu',
+                           input_samples=8000, bs=4):
     try:
         from thop import profile
-        macs, _ = profile(model, inputs=(dummy_input,))
-        print('MACS (millions): {}'.format(round(macs / 10**6, 2)))
+        mixture, mixture_p = create_input_for_model(bs, input_samples,
+                                                    model_class)
+        if mode == 'gpu':
+            mixture, mixture_p = mixture.cuda(), mixture_p.cuda()
+        macs, _ = profile(model, inputs=(mixture,))
+        print('GMACS: {}'.format(round(macs / 10**9, 3)))
     except:
         print('Could not find the profiler thop')
-    return macs
 
 
 def forward_pass(model, model_class,
                  repeats=1, mode='cpu', input_samples=8000, bs=4):
-    now = time.time()
+    total_time = 0.
     for i in range(repeats):
         mixture, mixture_p = create_input_for_model(bs, input_samples,
                                                     model_class)
         if mode == 'gpu':
             mixture, mixture_p = mixture.cuda(), mixture_p.cuda()
+        now = time.time()
         est_sources = model(mixture)
-        print(est_sources.shape)
-    avg_time = (time.time() - now) / repeats
-    print('Elapsed Time Forward {}: {}'.format(mode, avg_time))
+        total_time += time.time() - now
+    avg_time = total_time / repeats
+    print('Elapsed Time Forward {}: {} sec'.format(mode, avg_time))
 
 
 def backward_pass(model, model_class, input_samples=8000,
@@ -148,16 +158,15 @@ def backward_pass(model, model_class, input_samples=8000,
                                            backward_loss=True,
                                            improvement=True)
 
+    mixture, mixture_p = create_input_for_model(bs, input_samples,
+                                                model_class)
+    clean_wavs = create_targets(bs, input_samples, n_sources=n_sources)
+    if mode == 'gpu':
+        mixture, mixture_p = mixture.cuda(), mixture_p.cuda()
+        clean_wavs = clean_wavs.cuda()
+
     total_time = 0.
     for i in range(repeats):
-        mixture, mixture_p = create_input_for_model(bs, input_samples,
-                                                    model_class)
-        clean_wavs = create_targets(bs, input_samples, n_sources=n_sources)
-
-        if mode == 'gpu':
-            mixture, mixture_p = mixture.cuda(), mixture_p.cuda()
-            clean_wavs = clean_wavs.cuda()
-
         now = time.time()
         opt.zero_grad()
         est_sources = model(mixture)
@@ -169,24 +178,41 @@ def backward_pass(model, model_class, input_samples=8000,
         opt.step()
         total_time += time.time() - now
     avg_time = (total_time) / repeats
-    print('Elapsed Time Backward {}: {}'.format(mode, avg_time))
+    print('Elapsed Time Backward {}: {} sec'.format(mode, avg_time))
 
 
-def measure_gpu_memory(model, dummy_input, mode='forward'):
+def measure_gpu_memory(model, model_class, mode='forward',
+                       input_samples=8000, device='cpu',
+                       repeats=1, bs=4, n_sources=2):
     try:
         from pytorch_memlab import profile
+
         @profile
         def work():
-            pred_sources = model.forward(dummy_input)
+            if mode == 'forward':
+                forward_pass(model, model_class,
+                             repeats=repeats, mode=device,
+                             input_samples=input_samples, bs=bs)
+            elif mode == 'backward':
+                backward_pass(model, model_class, repeats=repeats, mode=device,
+                              input_samples=input_samples, bs=bs,
+                              n_sources=n_sources)
+            else:
+                raise NotImplementedError('Mode: {} is not yet '
+                                          'available'.format(mode))
         work()
     except Exception as e:
+        print(e)
         print('Could not find the profiler pytorch_memlab')
 
 
-if __name__ == "__main__":
-    args = get_args()
+def main_analyzer(args):
+    print('=' * 20)
     print('Selected Model Type: {}'.format(args.model_type))
-    if 'memory' in args.measure and args.device == 'cpu':
+    print('Selected Batch Size: {}'.format(args.batch_size))
+    print('Selected Input Samples: {}'.format(args.input_samples))
+    print('*' * 20)
+    if 'memory_cpu' in args.measure:
         import tracemalloc
         tracemalloc.start()
 
@@ -194,22 +220,46 @@ if __name__ == "__main__":
     if args.device == 'gpu':
         os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(
             [cad for cad in args.cuda_available_devices])
-        model = torch.nn.DataParallel(model).cuda()
+        if len(args.cuda_available_devices) > 1:
+            model = torch.nn.DataParallel(model).cuda()
+        else:
+            model = model.cuda()
 
-    # 'forward',
-    # 'backward',
-    # 'trainable_parameters',
-    # 'macs',
-    # 'memory'
+    # measure_gpu_memory(model, args.model_type, repeats=args.repeats,
+    #                    mode='forward',
+    #                    device=args.device, input_samples=args.input_samples,
+    #                    bs=args.batch_size, n_sources=args.n_sources)
+
+    if 'trainable_parameters' in args.measure:
+        count_parameters(model)
+
+    if 'forward_macs' in args.measure:
+        count_macs_for_forward(model, args.model_type, mode=args.device,
+                               input_samples=args.input_samples,
+                               bs=args.batch_size)
 
     if 'forward' in args.measure:
         forward_pass(model, args.model_type, repeats=args.repeats,
                      mode=args.device, input_samples=args.input_samples,
                      bs=args.batch_size)
+        if 'memory_gpu' in args.measure:
+            print('Peak GPU memory on Forward pass usage: {} GB'
+                  ''.format(torch.cuda.max_memory_allocated() / 10 ** 9))
+
+    if 'backward' in args.measure:
+        backward_pass(model, args.model_type, repeats=args.repeats,
+                      mode=args.device, input_samples=args.input_samples,
+                      bs=args.batch_size, n_sources=args.n_sources)
+        if 'memory_gpu' in args.measure:
+            print('Peak GPU memory on Backward pass usage: {} GB'
+                  ''.format(torch.cuda.max_memory_allocated() / 10 ** 9))
+    print('=' * 20)
+    time.sleep(2)
 
 
-    if 'memory' in args.measure and args.device == 'cpu':
-        current, peak = tracemalloc.get_traced_memory()
-        print('Current memory usage is {}GB; Peak was {}GB'
-              ''.format(current / 10 ** 9, peak / 10 ** 9))
-        tracemalloc.stop()
+if __name__ == "__main__":
+    args = get_args()
+    main_analyzer(args)
+
+
+
