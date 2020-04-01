@@ -102,4 +102,3 @@ if __name__ == "__main__":
     # cpu_results_dic = parse_cpuram_results_file(cpu_results_path)
     from pprint import pprint
     pprint(results_dic)
-    # pprint(cpu_results_dic)
