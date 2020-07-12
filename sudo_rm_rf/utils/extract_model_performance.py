@@ -17,7 +17,7 @@ sys.path.append(root_dir)
 import sudo_rm_rf.dnn.models.dprnn as dprnn
 import sudo_rm_rf.dnn.models.demucs as demucs
 import sudo_rm_rf.dnn.models.original_convtasnet as original_convtasnet
-import sudo_rm_rf.dnn.models.simplified_tasnet as ptasent
+import sudo_rm_rf.dnn.models.two_step_tdcn as ptasent
 import sudo_rm_rf.dnn.models.eetp_tdcn as eetptdcn
 import sudo_rm_rf.dnn.losses.sisdr as sisdr_lib
 

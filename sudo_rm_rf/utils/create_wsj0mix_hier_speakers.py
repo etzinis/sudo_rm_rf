@@ -20,6 +20,7 @@ from scipy.io import wavfile
 import torch
 
 import sudo_rm_rf.utils.progress_display as progress_display
+from __config__ import *
 
 import time
 import numpy as np
@@ -248,14 +249,15 @@ def convert_wsj0mix_to_hierarchical_dataset(input_dirpath,
     print("Dataset ready at: {}".format(root_out_dir))
 
 
-def example_of_usage():
-    input_dirpath = '/mnt/data/wsj0-mix/2speakers/wav8k/min'
-    output_dirpath = '/mnt/data/hierarchical_sound_datasets/wsj0_mix_val'
-    wav_timelength = 4
-    convert_wsj0mix_to_hierarchical_dataset(input_dirpath,
-                                            output_dirpath,
-                                            wav_timelength)
+def run_all():
+    for data_type in ['min', 'max']:
+        input_dirpath = os.path.join(WSJ0_MIX_2_8K_PATH, 'min')
+        output_dirpath = WSJ_MIX_HIERARCHICAL_P
+        wav_timelength = 4
+        convert_wsj0mix_to_hierarchical_dataset(input_dirpath,
+                                                output_dirpath,
+                                                wav_timelength)
 
 
 if __name__ == "__main__":
-    example_of_usage()
+    run_all()

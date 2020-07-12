@@ -258,8 +258,7 @@ def convert_wsj0mix_to_universal_dataset(input_dirpath,
 
     print("Dataset ready at: {}".format(root_out_dir))
 
-
-def example_of_usage():
+def run_all():
     input_dirpath = os.path.join(WSJ0_MIX_2_8K_PATH, 'max')
     output_dirpath = WSJ0_MIX_2_8K_PREPROCESSED_BASE_P
     wav_timelength = 4
@@ -269,4 +268,4 @@ def example_of_usage():
 
 
 if __name__ == "__main__":
-    example_of_usage()
+    run_all()
