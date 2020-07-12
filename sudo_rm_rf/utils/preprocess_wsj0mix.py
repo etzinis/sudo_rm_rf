@@ -16,7 +16,7 @@ from glob2 import glob
 import joblib
 from scipy.io import wavfile
 import torch
-import attentional_control.utils.progress_display as progress_display
+import sudo_rm_rf.utils.progress_display as progress_display
 from __config__ import *
 
 

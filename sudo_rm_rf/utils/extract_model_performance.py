@@ -14,12 +14,12 @@ import sys
 current_dir = os.path.dirname(os.path.abspath('__file__'))
 root_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 sys.path.append(root_dir)
-import attentional_control.dnn.models.dprnn as dprnn
-import attentional_control.dnn.models.demucs as demucs
-import attentional_control.dnn.models.original_convtasnet as original_convtasnet
-import attentional_control.dnn.models.simplified_tasnet as ptasent
-import attentional_control.dnn.models.eetp_tdcn as eetptdcn
-import attentional_control.dnn.losses.sisdr as sisdr_lib
+import sudo_rm_rf.dnn.models.dprnn as dprnn
+import sudo_rm_rf.dnn.models.demucs as demucs
+import sudo_rm_rf.dnn.models.original_convtasnet as original_convtasnet
+import sudo_rm_rf.dnn.models.simplified_tasnet as ptasent
+import sudo_rm_rf.dnn.models.eetp_tdcn as eetptdcn
+import sudo_rm_rf.dnn.losses.sisdr as sisdr_lib
 
 
 def get_args():

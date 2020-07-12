@@ -19,7 +19,7 @@ import joblib
 from scipy.io import wavfile
 import torch
 
-import attentional_control.utils.progress_display as progress_display
+import sudo_rm_rf.utils.progress_display as progress_display
 
 import time
 import numpy as np

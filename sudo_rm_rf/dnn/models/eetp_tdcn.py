@@ -1,5 +1,5 @@
 """!
-@brief TasNet Wrapper for time-domain signal estimation.
+@brief Initial SudoRmRf model
 
 @author Efthymios Tzinis {etzinis2@illinois.edu}
 @copyright University of Illinois at Urbana-Champaign

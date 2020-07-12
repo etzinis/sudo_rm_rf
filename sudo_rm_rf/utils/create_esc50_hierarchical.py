@@ -22,7 +22,7 @@ import csv
 from tqdm import tqdm
 import shutil
 
-import attentional_control.utils.progress_display as progress_display
+import sudo_rm_rf.utils.progress_display as progress_display
 
 from __config__ import ESC50_DOWNLOADED_P, ESC50_HIERARCHICAL_P
 
