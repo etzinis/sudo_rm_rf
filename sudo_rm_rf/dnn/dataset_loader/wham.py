@@ -17,6 +17,7 @@ root_dir = os.path.abspath(os.path.join(current_dir, '../../../'))
 sys.path.append(root_dir)
 import sudo_rm_rf.dnn.dataset_loader.abstract_dataset as abstract_dataset
 from scipy.io import wavfile
+import warnings
 from tqdm import tqdm
 from time import time
 
@@ -64,6 +65,7 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
     """
     def __init__(self, **kwargs):
         super(Dataset, self).__init__()
+        warnings.filterwarnings("ignore")
         self.kwargs = kwargs
 
         self.task = self.get_arg_and_check_validness(

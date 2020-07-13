@@ -247,12 +247,12 @@ class SuDORMRF(nn.Module):
                        2 ** self.upsampling_depth)
 
         # Front end
-        self.encoder = nn.Sequential(*[
-            nn.Conv1d(in_channels=1, out_channels=enc_num_basis,
-                      kernel_size=enc_kernel_size,
-                      stride=enc_kernel_size // 2,
-                      padding=enc_kernel_size // 2),
-        ])
+        self.encoder = nn.Conv1d(in_channels=1, out_channels=enc_num_basis,
+                                 kernel_size=enc_kernel_size,
+                                 stride=enc_kernel_size // 2,
+                                 padding=enc_kernel_size // 2,
+                                 bias=False)
+        torch.nn.init.xavier_uniform(self.encoder.weight)
 
         # Norm before the rest, and apply one more dense layer
         self.ln = GlobLN(enc_num_basis)
@@ -279,7 +279,8 @@ class SuDORMRF(nn.Module):
             kernel_size=enc_kernel_size,
             stride=enc_kernel_size // 2,
             padding=enc_kernel_size // 2,
-            groups=num_sources)
+            groups=1, bias=False)
+        torch.nn.init.xavier_uniform(self.decoder.weight)
         self.mask_nl_class = nn.ReLU()
     # Forward pass
     def forward(self, input_wav):

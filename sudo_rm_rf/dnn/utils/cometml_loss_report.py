@@ -30,7 +30,16 @@ def report_losses_mean_and_std(losses_dict, experiment, tr_step, val_step):
         mean_metric = np.mean(values)
         std_metric = np.std(values)
 
-        if l_name.startswith('tr_'):
+        if 'val' in l_name or 'test' in l_name:
+            actual_name = l_name.replace('val_', '')
+            with experiment.validate():
+                experiment.log_metric(actual_name + '_mean',
+                                      mean_metric,
+                                      step=val_step)
+                experiment.log_metric(actual_name + '_std',
+                                      std_metric,
+                                      step=val_step)
+        elif 'tr' in l_name:
             actual_name = l_name.replace('tr_', '')
             with experiment.train():
                 experiment.log_metric(actual_name + '_mean',
@@ -40,18 +49,9 @@ def report_losses_mean_and_std(losses_dict, experiment, tr_step, val_step):
                                       std_metric,
                                       step=tr_step)
 
-        elif l_name.startswith('val_'):
-            actual_name = l_name.replace('val_', '')
-            with experiment.validate():
-                experiment.log_metric(actual_name + '_mean',
-                                      mean_metric,
-                                      step=val_step)
-                experiment.log_metric(actual_name + '_std',
-                                      std_metric,
-                                      step=val_step)
         else:
-            raise ValueError("tr_ or val_ must be in the start of the "
-                             "metric name <{}>.".format(l_name))
+            raise ValueError("tr or val or test must be in metric name <{}>."
+                             "".format(l_name))
 
         losses_dict[l_name]['mean'] = mean_metric
         losses_dict[l_name]['std'] = std_metric

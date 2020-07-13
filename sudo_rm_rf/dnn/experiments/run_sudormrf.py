@@ -132,7 +132,6 @@ for i in range(hparams['n_epochs']):
                                            hparams['clip_grad_norm'])
         opt.step()
         res_dic[back_loss_tr_loss_name]['acc'].append(l.item())
-        break
     tr_step += 1
 
     if hparams['reduce_lr_every'] > 0:
@@ -156,7 +155,6 @@ for i in range(hparams['n_epochs']):
                                   clean_wavs,
                                   initial_mixtures=m1wavs)
                     res_dic[loss_name]['acc'] += l.tolist()
-                break
             if hparams["log_audio"]:
                 audio_logger.log_batch(rec_sources_wavs, clean_wavs, m1wavs,
                                        experiment, step=val_step)
@@ -176,7 +174,6 @@ for i in range(hparams['n_epochs']):
                                   clean_wavs,
                                   initial_mixtures=m1wavs)
                     res_dic[loss_name]['acc'] += l.tolist()
-                break
     if hparams["metrics_log_path"] is not None:
         metrics_logger.log_metrics(res_dic, hparams["metrics_log_path"],
                                    tr_step, val_step,

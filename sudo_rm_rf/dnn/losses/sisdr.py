@@ -1,5 +1,6 @@
 """!
-@brief SISNR very efficient computation in Torch
+@brief SISNR very efficient computation in Torch. PArts have been used from
+asteroid for values cross checking.
 
 @author Efthymios Tzinis {etzinis2@illinois.edu}
 @copyright University of illinois at Urbana Champaign
