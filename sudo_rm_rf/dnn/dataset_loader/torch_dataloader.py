@@ -22,7 +22,7 @@ root_dir = os.path.abspath(os.path.join(current_dir, '../../../'))
 sys.path.append(root_dir)
 
 from torch.utils.data import Dataset, DataLoader
-from attentional_control.utils import preprocess_wsj0mix
+from sudo_rm_rf.utils import preprocess_wsj0mix
 
 
 class End2EndMixtureDataset(Dataset):

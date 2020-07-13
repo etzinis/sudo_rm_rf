@@ -9,21 +9,10 @@ import os
 import sys
 
 sys.path.append('../../../../')
-import attentional_control.dnn.dataset_loader.torch_dataloader as dataloader
-import attentional_control.dnn.dataset_loader.augmented_mix_dataloader as \
+import sudo_rm_rf.dnn.dataset_loader.torch_dataloader as dataloader
+import sudo_rm_rf.dnn.dataset_loader.augmented_mix_dataloader as \
     augmented_dataloader
-from __config__ import WSJ_MIX_2_8K_PREPROCESSED_EVAL_P, \
-    WSJ_MIX_2_8K_PREPROCESSED_TEST_P, WSJ_MIX_2_8K_PREPROCESSED_TRAIN_P
-from __config__ import WSJ_MIX_2_8K_PREPROCESSED_EVAL_PAD_P, \
-    WSJ_MIX_2_8K_PREPROCESSED_TEST_PAD_P, WSJ_MIX_2_8K_PREPROCESSED_TRAIN_PAD_P
-from __config__ import TIMIT_MIX_2_8K_PREPROCESSED_EVAL_P, \
-    TIMIT_MIX_2_8K_PREPROCESSED_TEST_P, TIMIT_MIX_2_8K_PREPROCESSED_TRAIN_P
-from __config__ import AFE_WSJ_MIX_2_8K, AFE_WSJ_MIX_2_8K_PAD, \
-    AFE_WSJ_MIX_2_8K_NORMPAD
-from __config__ import TNMASK_WSJ_MIX_2_8K, TNMASK_WSJ_MIX_2_8K_PAD, \
-    TNMASK_WSJ_MIX_2_8K_NORMPAD
-from __config__ import WSJ_MIX_HIERARCHICAL_P, ESC50_HIERARCHICAL_P
-from __config__ import TNMASK_AUGMENTED, AFE_AUGMENTED
+from __config__ import *
 
 
 def is_augmented_dataset(datasets):
@@ -67,8 +56,6 @@ def update_hparams(hparams):
         hparams['train_dataset_path'] = [
             os.path.join(get_hierarchical_dataset_rootdir(d_name), 'train')
             for d_name in hparams['train_dataset']]
-        hparams['afe_dir'] = os.path.join(AFE_AUGMENTED, train_dataset_name)
-        hparams['tn_mask_dir'] = os.path.join(TNMASK_AUGMENTED, train_dataset_name)
         hparams['return_items'] = ['mixture_wav_norm',
                                    'clean_sources_wavs_norm']
 
@@ -78,12 +65,6 @@ def update_hparams(hparams):
                 for d_name in hparams['val_dataset']]
         else:
             hparams['val_dataset'] = hparams['val_dataset'][0]
-            if hparams['val_dataset'] == 'WSJ2MIX8KNORMPAD':
-                hparams['val_dataset_path'] = WSJ_MIX_2_8K_PREPROCESSED_TEST_PAD_P
-            elif hparams['val_dataset'] == 'WSJ2MIX8KPAD':
-                hparams['val_dataset_path'] = WSJ_MIX_2_8K_PREPROCESSED_TEST_P
-            else:
-                raise ValueError('Validation Set must be specific')
 
         if hparams['train_val_dataset'] is None:
             return
@@ -94,14 +75,6 @@ def update_hparams(hparams):
                 for d_name in hparams['train_val_dataset']]
         else:
             hparams['train_val_dataset'] = hparams['train_val_dataset'][0]
-            if hparams['train_val_dataset'] == 'WSJ2MIX8KNORMPAD':
-                hparams['train_val_dataset_path'] = \
-                    WSJ_MIX_2_8K_PREPROCESSED_TRAIN_PAD_P
-            elif hparams['train_val_dataset'] == 'WSJ2MIX8KPAD':
-                hparams['train_val_dataset_path'] = \
-                    WSJ_MIX_2_8K_PREPROCESSED_TRAIN_P
-            else:
-                raise ValueError('Train Validation Set must be specific')
         return
 
     if len(hparams['train_dataset']) == 1:
@@ -110,63 +83,6 @@ def update_hparams(hparams):
         hparams['val_dataset'] = hparams['val_dataset'][0]
     if len(hparams['train_val_dataset']) == 1:
         hparams['train_val_dataset'] = hparams['train_val_dataset'][0]
-
-    if (hparams['train_dataset'] == 'WSJ2MIX8K' and
-        hparams['val_dataset'] == 'WSJ2MIX8K'):
-        hparams['in_samples'] = 32000
-        hparams['n_sources'] = 2
-        hparams['fs'] = 8000.
-        hparams['train_dataset_path'] = WSJ_MIX_2_8K_PREPROCESSED_TRAIN_P
-        hparams['val_dataset_path'] = WSJ_MIX_2_8K_PREPROCESSED_EVAL_P
-        hparams['afe_dir'] = AFE_WSJ_MIX_2_8K
-        hparams['tn_mask_dir'] = TNMASK_WSJ_MIX_2_8K
-        hparams['return_items'] = ['mixture_wav_norm',
-                                   'clean_sources_wavs_norm']
-    elif (hparams['train_dataset'] == 'WSJ2MIX8KPAD' and
-        hparams['val_dataset'] == 'WSJ2MIX8KPAD'):
-        hparams['in_samples'] = 32000
-        hparams['n_sources'] = 2
-        hparams['fs'] = 8000.
-        hparams['train_dataset_path'] = WSJ_MIX_2_8K_PREPROCESSED_TRAIN_PAD_P
-        hparams['val_dataset_path'] = WSJ_MIX_2_8K_PREPROCESSED_TEST_PAD_P
-        hparams['afe_dir'] = AFE_WSJ_MIX_2_8K_PAD
-        hparams['tn_mask_dir'] = TNMASK_WSJ_MIX_2_8K_PAD
-        hparams['return_items'] = ['mixture_wav',
-                                   'clean_sources_wavs']
-    elif (hparams['train_dataset'] == 'WSJ2MIX8KNORMPAD' and
-        hparams['val_dataset'] == 'WSJ2MIX8KNORMPAD'):
-        hparams['in_samples'] = 32000
-        hparams['n_sources'] = 2
-        hparams['fs'] = 8000.
-        hparams['train_dataset_path'] = WSJ_MIX_2_8K_PREPROCESSED_TRAIN_PAD_P
-        hparams['val_dataset_path'] = WSJ_MIX_2_8K_PREPROCESSED_TEST_PAD_P
-        hparams['afe_dir'] = AFE_WSJ_MIX_2_8K_NORMPAD
-        hparams['tn_mask_dir'] = TNMASK_WSJ_MIX_2_8K_NORMPAD
-        hparams['return_items'] = ['mixture_wav_norm',
-                                   'clean_sources_wavs_norm']
-    elif(hparams['train_dataset'] == 'TIMITMF8K' and
-         hparams['val_dataset'] == 'TIMITMF8K'):
-        hparams['in_samples'] = 16000
-        hparams['n_sources'] = 2
-        hparams['fs'] = 8000.
-        hparams['train_dataset_path'] = TIMIT_MIX_2_8K_PREPROCESSED_TRAIN_P
-        hparams['val_dataset_path'] = TIMIT_MIX_2_8K_PREPROCESSED_EVAL_P
-        hparams['return_items'] = ['mic1_wav_downsampled',
-                                   'clean_sources_wavs_downsampled']
-    else:
-        raise NotImplementedError('Datasets: {}, {} are not available'
-                                  ''.format(hparams['train_dataset'],
-                                            hparams['val_dataset']))
-
-    if hparams['train_val_dataset'] is not None:
-        if hparams['train_val_dataset'] == 'WSJ2MIX8KNORMPAD':
-            hparams['train_val_dataset_path'] = \
-                WSJ_MIX_2_8K_PREPROCESSED_TRAIN_PAD_P
-        elif hparams['train_val_dataset'] == 'WSJ2MIX8KPAD':
-            hparams['train_val_dataset_path'] = \
-                WSJ_MIX_2_8K_PREPROCESSED_TRAIN_P
-        else:
-            raise ValueError('Train Validation Set must be specific')
 
 
 def get_data_loaders(hparams):

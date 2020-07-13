@@ -16,19 +16,15 @@ from comet_ml import Experiment
 import torch
 from tqdm import tqdm
 from pprint import pprint
-import attentional_control.dnn.dataset_loader.torch_dataloader as dataloader
-import attentional_control.dnn.experiments.utils.dataset_specific_params \
+import sudo_rm_rf.dnn.experiments.utils.dataset_specific_params \
     as dataset_specific_params
-import attentional_control.dnn.losses.sisdr as sisdr_lib
-import attentional_control.dnn.utils.cometml_loss_report as cometml_report
-import attentional_control.dnn.utils.metrics_logger as metrics_logger
-import attentional_control.dnn.utils.cometml_log_audio as cometml_audio_logger
-import attentional_control.dnn.experiments.utils.cmd_args_parser as parser
-import attentional_control.dnn.models.simplified_tasnet as ptasent
-import attentional_control.dnn.models.eetp_tdcn as eetptdcn
-import attentional_control.dnn.models.unet_eetp_tdcn as eunet
-import attentional_control.dnn.experiments.utils.hparams_parser as \
-    hparams_parser
+import sudo_rm_rf.dnn.losses.sisdr as sisdr_lib
+import sudo_rm_rf.dnn.utils.cometml_loss_report as cometml_report
+import sudo_rm_rf.dnn.utils.metrics_logger as metrics_logger
+import sudo_rm_rf.dnn.utils.cometml_log_audio as cometml_audio_logger
+import sudo_rm_rf.dnn.experiments.utils.cmd_args_parser as parser
+import sudo_rm_rf.dnn.models.sudormrf as sudormrf
+import sudo_rm_rf.dnn.experiments.utils.hparams_parser as hparams_parser
 
 
 args = parser.get_args()
@@ -83,42 +79,13 @@ tr_val_losses = dict([
                                                improvement=True,
                                                return_individual_results=True))])
 
-if hparams['model_type'] == 'simple':
-    model_class = ptasent.TDCN
-    model = ptasent.TDCN(
-        B=hparams['B'],
-        H=hparams['H'],
-        P=hparams['P'],
-        R=hparams['R'],
-        X=hparams['X'],
-        L=hparams['n_kernel'],
-        N=hparams['n_basis'],
-        S=2)
-elif hparams['model_type'] == 'residual':
-    model_class = ptasent.ResidualTN
-    model = ptasent.ResidualTN(
-        B=hparams['B'],
-        H=hparams['H'],
-        P=hparams['P'],
-        R=hparams['R'],
-        X=hparams['X'],
-        L=hparams['n_kernel'],
-        N=hparams['n_basis'],
-        S=2)
-elif hparams['model_type'] == 'eetp_tdcn':
-    model_class = eetptdcn.EETPTDCN
-    model = eetptdcn.EETPTDCN(
-        B=hparams['B'],
-        H=hparams['H'],
-        P=hparams['P'],
-        R=hparams['R'],
-        X=hparams['X'],
-        L=hparams['n_kernel'],
-        N=hparams['n_basis'],
-        S=2)
-else:
-    raise NotImplementedError(
-        'Tasnet type: {} is not yet available.'.format(hparams['model_type']))
+model = sudormrf.SuDORMRF(out_channels=hparams['out_channels'],
+                          in_channels=hparams['in_channels'],
+                          num_blocks=hparams['num_blocks'],
+                          upsampling_depth=hparams['upsampling_depth'],
+                          enc_kernel_size=hparams['enc_kernel_size'],
+                          enc_num_basis=hparams['enc_num_basis'],
+                          num_sources=hparams['n_sources'])
 
 numparams = 0
 for f in model.parameters():
@@ -130,19 +97,7 @@ print('Trainable Parameters: {}'.format(numparams))
 
 model = torch.nn.DataParallel(model).cuda()
 
-if 1:
-    opt = torch.optim.Adam(model.parameters(), lr=hparams['learning_rate'])
-else:
-    import pytorch_warmup as warmup
-    opt = torch.optim.AdamW(model.parameters(),
-                            lr=hparams['learning_rate'],
-                            betas=(0.9, 0.999),
-                            weight_decay=0.01)
-    num_steps = len(train_gen) * hparams['n_epochs']
-    lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        opt, T_max=num_steps)
-    # warmup_scheduler = warmup.UntunedLinearWarmup(opt)
-    warmup_scheduler = warmup.RAdamWarmup(opt)
+opt = torch.optim.Adam(model.parameters(), lr=hparams['learning_rate'])
 
 all_losses = [back_loss_tr_loss_name] + \
              [k for k in sorted(val_losses.keys())] + \
@@ -176,10 +131,8 @@ for i in range(hparams['n_epochs']):
             torch.nn.utils.clip_grad_norm_(model.parameters(),
                                            hparams['clip_grad_norm'])
         opt.step()
-        if 0:
-            lr_scheduler.step()
-            warmup_scheduler.dampen()
         res_dic[back_loss_tr_loss_name]['acc'].append(l.item())
+        break
     tr_step += 1
 
     if hparams['reduce_lr_every'] > 0:
@@ -203,6 +156,7 @@ for i in range(hparams['n_epochs']):
                                   clean_wavs,
                                   initial_mixtures=m1wavs)
                     res_dic[loss_name]['acc'] += l.tolist()
+                break
             if hparams["log_audio"]:
                 audio_logger.log_batch(rec_sources_wavs, clean_wavs, m1wavs,
                                        experiment, step=val_step)
@@ -222,6 +176,7 @@ for i in range(hparams['n_epochs']):
                                   clean_wavs,
                                   initial_mixtures=m1wavs)
                     res_dic[loss_name]['acc'] += l.tolist()
+                break
     if hparams["metrics_log_path"] is not None:
         metrics_logger.log_metrics(res_dic, hparams["metrics_log_path"],
                                    tr_step, val_step,
@@ -232,11 +187,6 @@ for i in range(hparams['n_epochs']):
                                                         tr_step,
                                                         val_step)
 
-    model_class.save_if_best(
-        hparams['log_path'], model.module, opt, tr_step,
-        res_dic[back_loss_tr_loss_name]['mean'],
-        res_dic[val_loss_name]['mean'], val_loss_name.replace("_", ""),
-        cometml_experiment=experiment)
     for loss_name in res_dic:
         res_dic[loss_name]['acc'] = []
     pprint(res_dic)

@@ -18,7 +18,7 @@ import sudo_rm_rf.dnn.models.dprnn as dprnn
 import sudo_rm_rf.dnn.models.demucs as demucs
 import sudo_rm_rf.dnn.models.original_convtasnet as original_convtasnet
 import sudo_rm_rf.dnn.models.two_step_tdcn as ptasent
-import sudo_rm_rf.dnn.models.eetp_tdcn as eetptdcn
+import sudo_rm_rf.dnn.models.sudormrf as sudormrf
 import sudo_rm_rf.dnn.losses.sisdr as sisdr_lib
 
 
@@ -86,14 +86,35 @@ def get_model(model_name):
         model_class = ptasent.TDCN
         model = ptasent.TDCN(B=256, H=512, P=3, R=4, X=8, L=21, N=256, S=2)
     elif model_name == 'sudormrf_R16':
-        model_class = eetptdcn.EETPTDCN
-        model = eetptdcn.EETPTDCN(B=128, H=512, P=3, R=16, X=5, L=21, N=512, S=2)
+        model_class = sudormrf.SuDORMRF
+        model = sudormrf.SuDORMRF(
+            out_channels=128,
+            in_channels=512,
+            num_blocks=16,
+            upsampling_depth=5,
+            enc_kernel_size=21,
+            enc_num_basis=512,
+            num_sources=2)
     elif model_name == 'sudormrf_R8':
-        model_class = eetptdcn.EETPTDCN
-        model = eetptdcn.EETPTDCN(B=128, H=512, P=3, R=8, X=5, L=21, N=512, S=2)
+        model_class = sudormrf.SuDORMRF
+        model = sudormrf.SuDORMRF(
+            out_channels=128,
+            in_channels=512,
+            num_blocks=8,
+            upsampling_depth=5,
+            enc_kernel_size=21,
+            enc_num_basis=512,
+            num_sources=2)
     elif model_name == 'sudormrf_R4':
-        model_class = eetptdcn.EETPTDCN
-        model = eetptdcn.EETPTDCN(B=128, H=512, P=3, R=4, X=5, L=21, N=512, S=2)
+        model_class = sudormrf.SuDORMRF
+        model = sudormrf.SuDORMRF(
+            out_channels=128,
+            in_channels=512,
+            num_blocks=4,
+            upsampling_depth=5,
+            enc_kernel_size=21,
+            enc_num_basis=512,
+            num_sources=2)
     else:
         raise NotImplementedError(
             'Baseline model type: {} is not yet available.'.format(model_name))

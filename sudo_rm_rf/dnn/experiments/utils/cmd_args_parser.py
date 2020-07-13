@@ -166,6 +166,32 @@ def get_args():
                         that will be used.""",
                         default=50)
 
+    # ===============================================
+    # Separation model (SuDO-RM-RF) params
+    parser.add_argument("--out_channels", type=int,
+                        help="The number of channels of the internal "
+                             "representation outside the U-Blocks.",
+                        default=128)
+    parser.add_argument("--in_channels", type=int,
+                        help="The number of channels of the internal "
+                             "representation inside the U-Blocks.",
+                        default=512)
+    parser.add_argument("--num_blocks", type=int,
+                        help="Number of the successive U-Blocks.",
+                        default=16)
+    parser.add_argument("--upsampling_depth", type=int,
+                        help="Number of successive upsamplings and "
+                             "effectively downsampling inside each U-Block. "
+                             "The aggregation of all scales is performed by "
+                             "addition.",
+                        default=5)
+    parser.add_argument("--enc_kernel_size", type=int,
+                        help="The width of the encoder and decoder kernels.",
+                        default=21)
+    parser.add_argument("--enc_num_basis", type=int,
+                        help="Number of the encoded basis representations.",
+                        default=512)
+
     parser.add_argument("-bs", "--batch_size", type=int,
                         help="""The number of samples in each batch. 
                             Warning: Cannot be less than the number of 

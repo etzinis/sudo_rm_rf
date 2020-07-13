@@ -45,6 +45,12 @@ def get_hparams_from_args(args):
         "clip_grad_norm": args.clip_grad_norm,
         "class_loss_weight": args.class_loss_weight,
         "n_classes": args.n_classes,
-        "log_audio": args.log_audio
+        "log_audio": args.log_audio,
+        "out_channels": args.out_channels,
+        "in_channels": args.in_channels,
+        "num_blocks": args.num_blocks,
+        "upsampling_depth": args.upsampling_depth,
+        "enc_kernel_size": args.enc_kernel_size,
+        "enc_num_basis": args.enc_num_basis,
     }
     return hparams

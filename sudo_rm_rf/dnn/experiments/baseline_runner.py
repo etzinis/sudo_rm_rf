@@ -18,20 +18,17 @@ from torch.nn import functional as F
 import numpy as np
 from tqdm import tqdm
 from pprint import pprint
-import attentional_control.dnn.dataset_loader.torch_dataloader as dataloader
-import attentional_control.dnn.experiments.utils.dataset_specific_params \
+import sudo_rm_rf.dnn.experiments.utils.dataset_specific_params \
     as dataset_specific_params
-import attentional_control.dnn.losses.sisdr as sisdr_lib
-import attentional_control.dnn.utils.cometml_loss_report as cometml_report
-import attentional_control.dnn.utils.metrics_logger as metrics_logger
-import attentional_control.dnn.utils.cometml_log_audio as cometml_audio_logger
-import attentional_control.dnn.experiments.utils.cmd_args_parser as parser
-import attentional_control.dnn.models.dprnn as dprnn
-import attentional_control.dnn.models.demucs as demucs
-import attentional_control.dnn.models.original_convtasnet as \
-    original_convtasnet
-import attentional_control.dnn.experiments.utils.hparams_parser as \
-    hparams_parser
+import sudo_rm_rf.dnn.losses.sisdr as sisdr_lib
+import sudo_rm_rf.dnn.utils.cometml_loss_report as cometml_report
+import sudo_rm_rf.dnn.utils.metrics_logger as metrics_logger
+import sudo_rm_rf.dnn.utils.cometml_log_audio as cometml_audio_logger
+import sudo_rm_rf.dnn.experiments.utils.cmd_args_parser as parser
+import sudo_rm_rf.dnn.models.dprnn as dprnn
+import sudo_rm_rf.dnn.models.demucs as demucs
+import sudo_rm_rf.dnn.models.original_convtasnet as original_convtasnet
+import sudo_rm_rf.dnn.experiments.utils.hparams_parser as hparams_parser
 
 
 args = parser.get_args()
