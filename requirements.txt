@@ -1,0 +1,14 @@
+numpy==1.17.2
+librosa==0.7.2
+scipy==1.4.1
+comet_ml==1.0.56
+glob2==0.7
+torch==1.3.0
+psutil==5.6.3
+joblib==0.13.2
+matplotlib==3.1.3
+tqdm==4.36.1
+progress==1.5
+pytorch_memlab==0.2.1
+pytorch_warmup==0.0.4
+thop==0.0.31-2005241907
