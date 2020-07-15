@@ -4,4 +4,4 @@ WSJ_MIX_HIERARCHICAL_P = '/mnt/nvme/hierarchical_sound_datasets/WSJ0_mix_partiti
 ESC50_HIERARCHICAL_P = '/mnt/nvme/hierarchical_sound_datasets/ESC50_partitioned/'
 WHAM_ROOT_PATH = '/mnt/data/wham'
 
-API_KEY = '7arFX4aIzJWDNQIOt7St56uUs'
+API_KEY = 'indert_cometml_key'
