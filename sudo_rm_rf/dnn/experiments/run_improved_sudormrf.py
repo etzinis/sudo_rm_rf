@@ -22,6 +22,7 @@ import sudo_rm_rf.dnn.experiments.utils.improved_cmd_args_parser as parser
 import sudo_rm_rf.dnn.experiments.utils.dataset_setup as dataset_setup
 import sudo_rm_rf.dnn.losses.sisdr as sisdr_lib
 import sudo_rm_rf.dnn.models.improved_sudormrf as improved_sudormrf
+import sudo_rm_rf.dnn.models.sudormrf as initial_sudormrf
 import sudo_rm_rf.dnn.utils.cometml_loss_report as cometml_report
 import sudo_rm_rf.dnn.utils.cometml_log_audio as cometml_audio_logger
 
@@ -55,11 +56,13 @@ os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(
 
 back_loss_tr_loss_name, back_loss_tr_loss = (
     'tr_back_loss_SISDRi',
-    sisdr_lib.PermInvariantSISDR(batch_size=hparams['batch_size'],
-                                 n_sources=hparams['n_sources'],
-                                 zero_mean=True,
-                                 backward_loss=True,
-                                 improvement=True)
+    sisdr_lib.PITLossWrapper(sisdr_lib.PairwiseNegSDR("sisdr"),
+                             pit_from='pw_mtx')
+    # sisdr_lib.PermInvariantSISDR(batch_size=hparams['batch_size'],
+    #                              n_sources=hparams['n_sources'],
+    #                              zero_mean=True,
+    #                              backward_loss=True,
+    #                              improvement=True)
 )
 
 val_losses = {}
@@ -75,13 +78,24 @@ for val_set in [x for x in generators if not x == 'train']:
         return_individual_results=True)
 all_losses.append(back_loss_tr_loss_name)
 
-model = improved_sudormrf.SuDORMRF(out_channels=hparams['out_channels'],
-                                   in_channels=hparams['in_channels'],
-                                   num_blocks=hparams['num_blocks'],
-                                   upsampling_depth=hparams['upsampling_depth'],
-                                   enc_kernel_size=hparams['enc_kernel_size'],
-                                   enc_num_basis=hparams['enc_num_basis'],
-                                   num_sources=hparams['n_sources'])
+if hparams['model_type'] == 'relu':
+    model = improved_sudormrf.SuDORMRF(out_channels=hparams['out_channels'],
+                                       in_channels=hparams['in_channels'],
+                                       num_blocks=hparams['num_blocks'],
+                                       upsampling_depth=hparams['upsampling_depth'],
+                                       enc_kernel_size=hparams['enc_kernel_size'],
+                                       enc_num_basis=hparams['enc_num_basis'],
+                                       num_sources=hparams['n_sources'])
+elif hparams['model_type'] == 'softmax':
+    model = initial_sudormrf.SuDORMRF(out_channels=hparams['out_channels'],
+                                      in_channels=hparams['in_channels'],
+                                      num_blocks=hparams['num_blocks'],
+                                      upsampling_depth=hparams['upsampling_depth'],
+                                      enc_kernel_size=hparams['enc_kernel_size'],
+                                      enc_num_basis=hparams['enc_num_basis'],
+                                      num_sources=hparams['n_sources'])
+else:
+    raise ValueError('Invalid model: {}.'.format(hparams['model_type']))
 
 numparams = 0
 for f in model.parameters():
@@ -92,15 +106,17 @@ print('Trainable Parameters: {}'.format(numparams))
 
 model = torch.nn.DataParallel(model).cuda()
 opt = torch.optim.Adam(model.parameters(), lr=hparams['learning_rate'])
-lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer=opt, mode='max', factor=1. / hparams['divide_lr_by'],
-    patience=hparams['patience'])
+# lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+#     optimizer=opt, mode='max', factor=1. / hparams['divide_lr_by'],
+#     patience=hparams['patience'], verbose=True)
+
 
 def normalize_tensor_wav(wav_tensor, eps=1e-8, std=None):
     mean = wav_tensor.mean(-1, keepdim=True)
     if std is None:
         std = wav_tensor.std(-1, keepdim=True)
     return (wav_tensor - mean) / (std + eps)
+
 
 tr_step = 0
 val_step = 0
@@ -122,8 +138,9 @@ for i in range(hparams['n_epochs']):
         # utterances from the same speaker but it's highly improbable).
         # Keep the exact same SNR distribution with the initial mixtures.
         energies = torch.sum(clean_wavs ** 2, dim=-1, keepdim=True)
-        new_s1 = clean_wavs[torch.randperm(energies.shape[0]), 0, :]
-        new_s2 = clean_wavs[torch.randperm(energies.shape[0]), 1, :]
+        random_wavs = clean_wavs[:, torch.randperm(energies.shape[1])]
+        new_s1 = random_wavs[torch.randperm(energies.shape[0]), 0, :]
+        new_s2 = random_wavs[torch.randperm(energies.shape[0]), 1, :]
         new_s2 = new_s2 * torch.sqrt(energies[:, 1] /
                                      (new_s2 ** 2).sum(-1, keepdims=True))
         new_s1 = new_s1 * torch.sqrt(energies[:, 0] /
@@ -136,15 +153,20 @@ for i in range(hparams['n_epochs']):
         rec_sources_wavs = model(m1wavs.unsqueeze(1))
 
         l = back_loss_tr_loss(rec_sources_wavs,
-                              clean_wavs,
-                              initial_mixtures=m1wavs.unsqueeze(1))
-        l.backward()
+                              clean_wavs)
         if hparams['clip_grad_norm'] > 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(),
                                            hparams['clip_grad_norm'])
+        l.backward()
         opt.step()
-    lr_scheduler.step(res_dic['val_SISDRi']['mean'])
-
+    # lr_scheduler.step(res_dic['val_SISDRi']['mean'])
+    if hparams['patience'] > 0:
+        if tr_step % hparams['patience'] == 0:
+            new_lr = (hparams['learning_rate']
+                      / (hparams['divide_lr_by'] ** (tr_step // hparams['patience'])))
+            print('Reducing Learning rate to: {}'.format(new_lr))
+            for param_group in opt.param_groups:
+                param_group['lr'] = new_lr
     tr_step += 1
 
     for val_set in [x for x in generators if not x == 'train']:

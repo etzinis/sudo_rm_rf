@@ -158,4 +158,9 @@ def get_args():
     parser.add_argument("--enc_num_basis", type=int,
                         help="Number of the encoded basis representations.",
                         default=512)
+
+    parser.add_argument("--model_type", type=str,
+                        help="The type of model you would like to use.",
+                        default='relu',
+                        choices=['relu', 'softmax'])
     return parser.parse_args()
