@@ -56,13 +56,13 @@ os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(
 
 back_loss_tr_loss_name, back_loss_tr_loss = (
     'tr_back_loss_SISDRi',
-    sisdr_lib.PITLossWrapper(sisdr_lib.PairwiseNegSDR("sisdr"),
-                             pit_from='pw_mtx')
-    # sisdr_lib.PermInvariantSISDR(batch_size=hparams['batch_size'],
-    #                              n_sources=hparams['n_sources'],
-    #                              zero_mean=True,
-    #                              backward_loss=True,
-    #                              improvement=True)
+    # sisdr_lib.PITLossWrapper(sisdr_lib.PairwiseNegSDR("sisdr"),
+    #                          pit_from='pw_mtx')
+    sisdr_lib.PermInvariantSISDR(batch_size=hparams['batch_size'],
+                                 n_sources=hparams['n_sources'],
+                                 zero_mean=True,
+                                 backward_loss=True,)
+                                 # improvement=True)
 )
 
 val_losses = {}
@@ -145,19 +145,20 @@ for i in range(hparams['n_epochs']):
                                      (new_s2 ** 2).sum(-1, keepdims=True))
         new_s1 = new_s1 * torch.sqrt(energies[:, 0] /
                                      (new_s1 ** 2).sum(-1, keepdims=True))
-        m1wavs = new_s1 + new_s2
-        clean_wavs[:, 0, :] = new_s1
-        clean_wavs[:, 1, :] = new_s2
+        m1wavs = normalize_tensor_wav(new_s1 + new_s2)
+        clean_wavs[:, 0, :] = normalize_tensor_wav(new_s1)
+        clean_wavs[:, 1, :] = normalize_tensor_wav(new_s2)
         # ===============================================
 
         rec_sources_wavs = model(m1wavs.unsqueeze(1))
 
         l = back_loss_tr_loss(rec_sources_wavs,
                               clean_wavs)
+        l.backward()
         if hparams['clip_grad_norm'] > 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(),
                                            hparams['clip_grad_norm'])
-        l.backward()
+
         opt.step()
     # lr_scheduler.step(res_dic['val_SISDRi']['mean'])
     if hparams['patience'] > 0:
