@@ -1,6 +1,6 @@
 # Sudo rm -rf: Efficient Networks for Universal Sound Source Separation
 
-TLDR; I think the main contribution of this paper is not to simply talk about another boring neural network architecture that works for audio source separation. I think of this paper as a way to express what actually is __"model complexity"__? In this paper we follow a more holistic approach on considering various aspects which are cumbersome for training or running neural models. Mainly, we care about: 
+TLDR; I think the main contribution of this paper is not to only talk about a new neural network architecture that works for audio source separation. I think of this paper as a way to express what actually is __"model complexity"__? In this paper we follow a more holistic approach on considering various aspects which are cumbersome for training or running neural models. Mainly, we care about: 
 1. The number of floating point operations (FLOPs)
 2. Actual memory requirements on the device (in bytes)
 3. Time for completing a single forward or backward pass
