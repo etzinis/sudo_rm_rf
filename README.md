@@ -1,10 +1,11 @@
 # Sudo rm -rf: Efficient Networks for Universal Sound Source Separation
 
-TLDR; I think the main contribution of this paper is not to only talk about a new neural network architecture that works for audio source separation. I think of this paper as a way to express what actually is __"model complexity"__? In this paper we follow a more holistic approach on considering various aspects which are cumbersome for training or running neural models. Mainly, we care about: 
-1. The number of floating point operations (FLOPs)
-2. Actual memory requirements on the device (in bytes)
-3. Time for completing a single forward or backward pass
-4. Number of parameters
+TLDR; The main contribution of this paper is to jointly consider audio separation performance in multiple tasks, in addition to computational complexity and memory requirements.  We develop a family of models that take into account the following elements:
+
+1. The number of floating points operations per fixed unit of input time.
+2. Memory requirements that also include intermediate variables on the GPU.
+3. Execution time for completing a forward and/or a backward pass.
+4. The number of parameters for the deployed model.
 
 Moreover, we also propose a convolutional architecture which is capable of capturing long-term temporal audio structure by using successive downsampling and resampling operations which can be efficiently implemented. Our experiments on both speech and environmental sound separation datasets show that SuDoRM-RF performs comparably and even surpasses various state-of-the-art approaches with significantly higher computational resource requirements
 
@@ -21,7 +22,7 @@ You can find our paper here: https://arxiv.org/abs/2007.06833. Please wait for n
 
 ## Model complexity and results
 
-As we discuss in the paper, our main consideration is to find efficient architectures not only in terms of one metric but in terms of all metrics which might become a bottleneck during training or inference. Imagine if somebody does not have many GPUs in order to train their model on, or wants to deploy a pre-trained model on an edge device. Would it really matter if somebody has the best performing model but could not actually train it or use it because of their hardware requirements?
+As we discuss in the paper, our main objective is to find efficient architectures not only in terms of one metric but in terms of all metrics which might become a bottleneck during training or inference. This will facilitate the needs of users that do not have in their disposal (or use case) the considerable requirements that many modern models exhibit. This will enable people with no GPU access, or users with interest in edge applications to also make use of this model and not be locked out of good performance.
 
 We present here the results from our paper:
 
@@ -42,7 +43,7 @@ Specifically, the backbone structure of this convolutional network is the SUcces
 
 ![U-ConvBlock architecture](images/Selection_060.png "U-ConvBlock architecture")
 
-By repeating those blocks we are able to increase the receptive field of our network without needing dilated convolutions or recurrent connections which would presumably be more costly in terms of computational time and memory requirements.
+By repeating those blocks we are able to increase the receptive field of our network without needing dilated convolutions or recurrent connections which is more costly in terms of computational time and memory requirements.
 
 ## How to run
 
