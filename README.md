@@ -15,7 +15,7 @@ You can find our paper here: https://arxiv.org/abs/2007.06833. Please wait for n
 ## Table of contents
 
 - [Model complexity and results](#model-complexity-and-results)
-- [Sudo rm -rf Architecture](#sudo-rm-rf-architecture)
+- [Sudo rm -rf architecture](#sudo-rm--rf-architecture)
 - [How to run](#how-to-run)
 - [Copyright and license](#copyright-and-license)
 
@@ -48,13 +48,13 @@ By repeating those blocks we are able to increase the receptive field of our net
 ## How to run
 
 1. Setup your cometml credentials and paths for datasets in the config file.
-```
+```shell
 vim __config__.py
 ```
 
 2. Generate and preprocess the data:
 
-```
+```shell
 cd sudo_rm_rf/utils
 # Creates data for WHAM as well as WSJ0-2mix and ESC-50 preprocessed with different speakers or classes of sounds stored in separate folders.
 bash generate_data.sh
@@ -92,21 +92,21 @@ for data in tqdm(generators['train'], desc='Training'):
 
 4. Run the improved version of Sudo rm -rf models by replacing the final softmax with a ReLu activation, forcing the decoder to contain only one module and also replacing the Layernorm with the Global Layernorm. You can run this 
 
-```
+```shell
 cd sudo_rm_rf/dnn/experiments
 python run_improved_sudormrf.py --train WHAM --val WHAM --test WHAM --train_val WHAM --separation_task sep_clean --n_train 20000 --n_test 3000 --n_val 3000 --n_train_val 3000 --out_channels 256 --num_blocks 16 -cad 0 1 -bs 4 --divide_lr_by 3. --upsampling_depth 5 --patience 49 -fs 8000 -tags source_separation_is_cool --project_name sudormrf_wham --zero_pad --clip_grad_norm 5.0 --model_type relu
 ```
 
 5. If you also want to take a look on some speech or enviromental sound classification experiments by using our cool augmentation dataloader which is able to mix multiple datasets with specified prior probabilities:
 
-```
+```shell
 cd sudo_rm_rf/dnn/experiments
 
 # Speech separation experiments.
 
 python run_sudormrf.py --n_epochs 50000 -lr 0.001 -X 5 -N 512 -B 256 -H 512 -L 21 -R 16 -bs 4 -tags environmental_sound_separation -cad 0 --train AUGMENTED_WSJMIX --val AUGMENTED_WSJMIX --train_val AUGMENTED_WSJMIX --datasets_priors 1. --max_abs_snr 5.  --n_val 3000 --n_train 20000 --project_name wsj-all --n_jobs 4 --divide_lr_by 3. --reduce_lr_every 49 --clip_grad_norm 5. --optimizer adam --selected_timelength 4. --log_audio -mlp /tmp/wsj_sudormrf -elp /tmp/wsj_sudormrf
 ```
-```
+```shell
 # Environmental sound separation experiments.
 
 python run_sudormrf.py --n_epochs 50000 -lr 0.001 -X 5 -N 512 -B 256 -H 512 -L 21 -R 16 -bs 4 -tags environmental_sound_separation -cad 0 --train AUGMENTED_ESC50 --val AUGMENTED_ESC50 --train_val AUGMENTED_ESC50 --datasets_priors 1. --max_abs_snr 5.  --n_val 3000 --n_train 20000 --project_name wsj-all --n_jobs 4 --divide_lr_by 3. --reduce_lr_every 49 --clip_grad_norm 5. --optimizer adam --selected_timelength 4. --log_audio -mlp /tmp/esc50_sudormrf -elp /tmp/esc50_sudormrf
