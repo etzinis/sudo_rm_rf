@@ -14,18 +14,35 @@ You can find our paper here: https://arxiv.org/abs/2007.06833. Please wait for n
 ## Table of contents
 
 - [Model complexity and results](#model-complexity-and-results)
-- [Sudo rm -rf Architecture](#whats-included)
+- [Sudo rm -rf Architecture](#sudo-rm-rf-architecture)
 - [How to run](#how-to-run)
 - [Copyright and license](#copyright-and-license)
 
 
 ## Model complexity and results
 
-Wait for it...
+As we discuss in the paper, our main consideration is to find efficient architectures not only in terms of one metric but in terms of all metrics which might become a bottleneck during training or inference. Imagine if somebody does not have many GPUs in order to train their model on, or wants to deploy a pre-trained model on an edge device. Would it really matter if somebody has the best performing model but could not actually train it or use it because of their hardware requirements?
+
+We present here the results from our paper:
+
+![ESC-50-results](images/Selection_061.png "ESC-50-results")
+SI-SDRi non-speech sound separation performance on ESC50 vs computational resources with an input audio of 8000 samples for all models. (Top row) computational requirements for a single forward pass on CPU (Bottom) for a backward pass on GPU. All x-axis are shown in log-scale while the 3 connected blue stars correspond to the three SuDoRM-RF configurations that we proposed. Namely, SuDoRM-RF 1.0x , SuDoRM-RF 0.5x , SuDoRM-RF 0.25x consist of 16, 8 and 4  U-ConvBlocks, respectively.
+
+![Table-results](images/Selection_062.png "Table-results")
+SI-SDRi separation performance for all models on both separation tasks (speech and non-speech) alongside their computational requirements for performing inference on CPU (I) and a backward update step on GPU (B) for one second of input audio or equivalently 8000 samples. * We assign the maximum SI-SDRi performance obtained by our runs and the reported number on the corresponding paper.
+
 
 ## Sudo rm -rf architecture
 
-Wait for it...
+This is the intiallly proposed architecture which is a mask-based convolutional architecture for audio source separation.
+
+![Sudo rm -rf architecture](images/Selection_059.png "Sudo rm -rf architecture")
+
+Specifically, the backbone structure of this convolutional network is the SUccessive DOwnsampling and Resampling of Multi-Resolution Features (SuDoRMRF) as well as their aggregation which is performed through simple one-dimensional convolutions. We call these blocks: U-ConvBlocks because of their structure:
+
+![U-ConvBlock architecture](images/Selection_060.png "U-ConvBlock architecture")
+
+By repeating those blocks we are able to increase the receptive field of our network without needing dilated convolutions or recurrent connections which would presumably be more costly in terms of computational time and memory requirements.
 
 ## How to run
 
