@@ -99,10 +99,10 @@ python run_improved_sudormrf.py --train WHAM --val WHAM --test WHAM --train_val 
 Or the following command for LIBRI2MIX clean speech separation experiment.
 ```shell
 cd sudo_rm_rf/dnn/experiments
-python run_improved_sudormrf.py --train LIBRI2MIX --val LIBRI2MIX --test LIBRI2MIX --train_val LIBRI2MIX --separation_task sep_clean --n_train 20000 --n_test 3000 --n_val 3000 --n_train_val 3000 --out_channels 512 --num_blocks 34 -cad 0 1 -bs 4 --divide_lr_by 3. --upsampling_depth 5 --patience 39 -fs 8000 -tags sudo_rm_rf_34 --project_name sudormrf_libri2mix --zero_pad --clip_grad_norm 5.0 --model_type relu
+python run_improved_sudormrf.py --train LIBRI2MIX --val LIBRI2MIX --test LIBRI2MIX --train_val LIBRI2MIX --separation_task sep_clean --n_train 50800 --n_test 3000 --n_val 3000 --n_train_val 3000 --out_channels 512 --num_blocks 34 -cad 0 1 -bs 4 --divide_lr_by 3. --upsampling_depth 5 --patience 39 -fs 8000 -tags sudo_rm_rf_34 --project_name sudormrf_libri2mix --zero_pad --clip_grad_norm 5.0 --model_type relu
 ```
 
-5. If you also want to take a look on some speech or enviromental sound classification experiments by using our cool augmentation dataloader which is able to mix multiple datasets with specified prior probabilities:
+5. If you also want to take a look on some speech or environmental sound classification experiments by using our cool augmentation dataloader which is able to mix multiple datasets with specified prior probabilities:
 
 ```shell
 cd sudo_rm_rf/dnn/experiments
