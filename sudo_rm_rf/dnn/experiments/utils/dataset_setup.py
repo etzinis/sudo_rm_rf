@@ -5,7 +5,8 @@
 @copyright University of Illinois at Urbana-Champaign
 """
 
-from __config__ import WHAM_ROOT_PATH
+from __config__ import WHAM_ROOT_PATH, LIBRI2MIX_ROOT_PATH
+import sudo_rm_rf.dnn.dataset_loader.libri2mix as libri2mix
 import sudo_rm_rf.dnn.dataset_loader.wham as wham_loader
 
 
@@ -23,6 +24,19 @@ def create_loader_for_simple_dataset(dataset_name=None,
         root_path = WHAM_ROOT_PATH
         translator = {'train': 'tr', 'test': 'tt', 'val': 'cv'}
         translated_split = translator[data_split]
+    elif dataset_name == 'LIBRI2MIX':
+        loader = libri2mix
+        root_path = LIBRI2MIX_ROOT_PATH
+        if n_samples > 13900 and data_split == 'train':
+            print('Going to use train-360 for training LibriMix...')
+            translated_split = 'train-360'
+        elif n_samples <= 13900 and data_split == 'train':
+            print('Going to use train-100 for training LibriMix...')
+            translated_split = 'train-100'
+        elif data_split == 'test':
+            translated_split = 'test'
+        elif data_split == 'val':
+            translated_split = 'dev'
     else:
         raise ValueError('Dataset: {} is not yet supported!'.format(
             dataset_name))
