@@ -13,10 +13,10 @@ import glob2
 
 import sys
 current_dir = os.path.dirname(os.path.abspath('__file__'))
-root_dir = os.path.abspath(os.path.join(current_dir, '../../../'))
+root_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 sys.path.append(root_dir)
 
-import sudo_rm_rf.dnn.dataloaders.abstract_dataset as abstract_dataset
+import sudo_rm_rf.dnn.dataset_loader.abstract_dataset as abstract_dataset
 from scipy.io import wavfile
 from tqdm import tqdm
 
