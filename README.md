@@ -9,6 +9,8 @@ TLDR; The main contribution of this paper is to jointly consider audio separatio
 
 Moreover, we also propose a convolutional architecture which is capable of capturing long-term temporal audio structure by using successive downsampling and resampling operations which can be efficiently implemented. Our experiments on both speech and environmental sound separation datasets show that SuDoRM-RF performs comparably and even surpasses various state-of-the-art approaches with significantly higher computational resource requirements
 
+[![YouTube sudo rm -rf presentation](http://img.youtube.com/vi/ftc0-tTf4O8/0.jpg)](https://www.youtube.com/watch?v=ftc0-tTf4O8 "sudo rm -rf presentation")
+
 You can find our paper here: https://arxiv.org/abs/2007.06833. Please wait for new updates on the presentation at MLSP 2020 https://ieeemlsp.cc/!
 
 
