@@ -9,6 +9,8 @@ TLDR; The main contribution of this paper is to jointly consider audio separatio
 
 Moreover, we also propose a convolutional architecture which is capable of capturing long-term temporal audio structure by using successive downsampling and resampling operations which can be efficiently implemented. Our experiments on both speech and environmental sound separation datasets show that SuDoRM-RF performs comparably and even surpasses various state-of-the-art approaches with significantly higher computational resource requirements
 
+[![YouTube sudo rm -rf presentation](http://img.youtube.com/vi/ftc0-tTf4O8/0.jpg)](https://www.youtube.com/watch?v=ftc0-tTf4O8 "sudo rm -rf presentation")
+
 You can find our paper here: https://arxiv.org/abs/2007.06833. Please wait for new updates on the presentation at MLSP 2020 https://ieeemlsp.cc/!
 
 
@@ -90,14 +92,19 @@ for data in tqdm(generators['train'], desc='Training'):
   opt.step()
 ```
 
-4. Run the improved version of Sudo rm -rf models by replacing the final softmax with a ReLu activation, forcing the decoder to contain only one module and also replacing the Layernorm with the Global Layernorm. You can run this 
+4. Run the improved version of Sudo rm -rf models by replacing the final softmax with a ReLu activation, forcing the decoder to contain only one module and also replacing the Layernorm with the Global Layernorm. You can run this for WHAM clean separation experiment. 
 
 ```shell
 cd sudo_rm_rf/dnn/experiments
-python run_improved_sudormrf.py --train WHAM --val WHAM --test WHAM --train_val WHAM --separation_task sep_clean --n_train 20000 --n_test 3000 --n_val 3000 --n_train_val 3000 --out_channels 256 --num_blocks 16 -cad 0 1 -bs 4 --divide_lr_by 3. --upsampling_depth 5 --patience 49 -fs 8000 -tags source_separation_is_cool --project_name sudormrf_wham --zero_pad --clip_grad_norm 5.0 --model_type relu
+python run_improved_sudormrf.py --train WHAM --val WHAM --test WHAM --train_val WHAM --separation_task sep_clean --n_train 20000 --n_test 3000 --n_val 3000 --n_train_val 3000 --out_channels 256 --num_blocks 16 -cad 0 1 -bs 4 --divide_lr_by 3. --upsampling_depth 5 --patience 49 -fs 8000 -tags sudo_rm_rf_16 --project_name sudormrf_wham --zero_pad --clip_grad_norm 5.0 --model_type relu
+```
+Or the following command for LIBRI2MIX clean speech separation experiment.
+```shell
+cd sudo_rm_rf/dnn/experiments
+python run_improved_sudormrf.py --train LIBRI2MIX --val LIBRI2MIX --test LIBRI2MIX --train_val LIBRI2MIX --separation_task sep_clean --n_train 50800 --n_test 3000 --n_val 3000 --n_train_val 3000 --out_channels 512 --num_blocks 34 -cad 0 1 -bs 4 --divide_lr_by 3. --upsampling_depth 5 --patience 39 -fs 8000 -tags sudo_rm_rf_34 --project_name sudormrf_libri2mix --zero_pad --clip_grad_norm 5.0 --model_type relu
 ```
 
-5. If you also want to take a look on some speech or enviromental sound classification experiments by using our cool augmentation dataloader which is able to mix multiple datasets with specified prior probabilities:
+5. If you also want to take a look on some speech or environmental sound classification experiments by using our cool augmentation dataloader which is able to mix multiple datasets with specified prior probabilities:
 
 ```shell
 cd sudo_rm_rf/dnn/experiments
