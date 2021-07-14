@@ -1,5 +1,5 @@
 """!
-@brief Running an experiment with the improved version of SuDoRmRf
+@brief Running an experiment with the improved version of SuDoRM-RF++ GC
 
 @author Efthymios Tzinis {etzinis2@illinois.edu}
 @copyright University of Illinois at Urbana-Champaign
@@ -116,7 +116,7 @@ for i in range(hparams['n_epochs']):
     res_dic = {}
     for loss_name in all_losses:
         res_dic[loss_name] = {'mean': 0., 'std': 0., 'acc': []}
-    print("Improved Sudo-RM-RF: {} - {} || Epoch: {}/{}".format(
+    print("Training SuDoRM-RF++ GC: {} - {} || Epoch: {}/{}".format(
         experiment.get_key(), experiment.get_tags(), i+1, hparams['n_epochs']))
     model.train()
 
