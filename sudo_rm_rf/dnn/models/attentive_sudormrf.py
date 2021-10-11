@@ -1,5 +1,5 @@
 """!
-@brief SuDO-RM-RF model
+@brief Attentive SuDO-RM-RF model
 
 @author Efthymios Tzinis {etzinis2@illinois.edu}
 @copyright University of Illinois at Urbana-Champaign
@@ -31,16 +31,6 @@ class GlobLN(_LayerNorm):
     """Global Layer Normalization (globLN)."""
 
     def forward(self, x):
-        """ Applies forward pass.
-
-        Works for any input size > 2D.
-
-        Args:
-            x (:class:`torch.Tensor`): Shape `[batch, chan, *]`
-
-        Returns:
-            :class:`torch.Tensor`: gLN_x `[batch, chan, *]`
-        """
         dims = list(range(1, len(x.shape)))
         mean = x.mean(dim=dims, keepdim=True)
         var = torch.pow(x - mean, 2).mean(dim=dims, keepdim=True)
@@ -159,17 +149,68 @@ class DilatedConvNorm(nn.Module):
         return self.norm(output)
 
 
-class UConvBlock(nn.Module):
+class MHANormLayer(nn.Module):
+    """Multi-head attention with residual addition and normalization."""
+    def __init__(self, in_dim, att_dim=128,
+                 num_heads=4, dropout=0.1,
+                 max_len=5000):
+        super(MHANormLayer, self).__init__()
+        self.mha = nn.MultiheadAttention(
+            att_dim, num_heads=num_heads, dropout=dropout,
+            bias=True, add_bias_kv=False,
+            add_zero_attn=False, kdim=None, vdim=None, batch_first=True,
+            device=None, dtype=None)
+        self.in_linear = nn.Linear(in_dim, att_dim)
+        self.in_norm = GlobLN(att_dim)
+        self.out_norm = GlobLN(att_dim)
+        self.out_linear = nn.Linear(att_dim, in_dim)
+        self.pos_enc = PositionalEncoding(
+            d_model=att_dim, dropout=dropout, max_len=max_len)
+        self.act = nn.PReLU()
+
+    def forward(self, x):
+        x = self.in_linear(x.transpose(1, 2))
+        x = self.pos_enc(x)
+        x = self.in_norm(x.transpose(1, 2)).transpose(1, 2)
+        x = x + self.mha(query=x, key=x, value=x)[0]
+        x = self.out_norm(x.transpose(1, 2)).transpose(1, 2)
+        return self.act(self.out_linear(x).transpose(1, 2))
+
+
+class PositionalEncoding(nn.Module):
+
+    def __init__(self, d_model, dropout=0.1, max_len=5000):
+        super(PositionalEncoding, self).__init__()
+        self.dropout = nn.Dropout(p=dropout)
+
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(
+            torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        return self.dropout(x + self.pe[:, :x.size(1), :])
+
+
+class AttentiveUConvBlock(nn.Module):
     '''
     This class defines the block which performs successive downsampling and
     upsampling in order to be able to analyze the input features in multiple
-    resolutions.
+    resolutions. Moreover, it defines an attention layer which is used for
+    better sequence modeling at the most downsampled level.
     '''
 
     def __init__(self,
                  out_channels=128,
                  in_channels=512,
-                 upsampling_depth=4):
+                 upsampling_depth=4,
+                 n_heads=4,
+                 att_dims=256,
+                 att_dropout=0.1):
         super().__init__()
         self.proj_1x1 = ConvNormAct(out_channels, in_channels, 1,
                                     stride=1, groups=1)
@@ -195,6 +236,12 @@ class UConvBlock(nn.Module):
         self.final_norm = NormAct(in_channels)
         self.res_conv = nn.Conv1d(in_channels, out_channels, 1)
 
+        # Attention layer
+        self.attention = MHANormLayer(in_dim=in_channels,
+                                      att_dim=att_dims,
+                                      num_heads=n_heads,
+                                      dropout=att_dropout)
+
     def forward(self, x):
         '''
         :param x: input feature map
@@ -206,9 +253,13 @@ class UConvBlock(nn.Module):
         output = [self.spp_dw[0](output1)]
 
         # Do the downsampling process from the previous level
-        for k in range(1, self.depth):
+        for k in range(1, self.depth-1):
             out_k = self.spp_dw[k](output[-1])
             output.append(out_k)
+
+        # Perform the attention across time and accumulate
+        att_in = self.spp_dw[self.depth-1](output[-1])
+        output.append(self.attention(att_in))
 
         # Gather them now in reverse order
         for _ in range(self.depth-1):
@@ -228,6 +279,9 @@ class SuDORMRF(nn.Module):
                  upsampling_depth=4,
                  enc_kernel_size=21,
                  enc_num_basis=512,
+                 n_heads=4,
+                 att_dims=256,
+                 att_dropout=0.1,
                  num_sources=2):
         super(SuDORMRF, self).__init__()
 
@@ -263,9 +317,12 @@ class SuDORMRF(nn.Module):
 
         # Separation module
         self.sm = nn.Sequential(*[
-            UConvBlock(out_channels=out_channels,
-                       in_channels=in_channels,
-                       upsampling_depth=upsampling_depth)
+            AttentiveUConvBlock(out_channels=out_channels,
+                                in_channels=in_channels,
+                                upsampling_depth=upsampling_depth,
+                                n_heads=4,
+                                att_dims=256,
+                                att_dropout=0.1)
             for _ in range(num_blocks)])
 
         mask_conv = nn.Conv1d(out_channels, num_sources * enc_num_basis, 1)
@@ -321,17 +378,23 @@ class SuDORMRF(nn.Module):
 
 
 if __name__ == "__main__":
+
+    from time import time
     model = SuDORMRF(out_channels=256,
                      in_channels=512,
-                     num_blocks=16,
+                     num_blocks=8,
                      upsampling_depth=5,
                      enc_kernel_size=21,
                      enc_num_basis=512,
-                     num_sources=2)
+                     n_heads=3,
+                     att_dims=256,
+                     att_dropout=0.1,
+                     num_sources=4)
 
     dummy_input = torch.rand(3, 1, 32079)
+    now = time()
     estimated_sources = model(dummy_input)
-    print(estimated_sources.shape)
+    print(estimated_sources.shape, time() - now)
 
 
 
