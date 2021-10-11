@@ -172,9 +172,20 @@ def get_args():
                         help="Number of the encoded basis representations.",
                         default=512)
 
+    # Attentive sudo parameters
+    parser.add_argument("--att_dims", type=int,
+                        help="The number of attention depth.",
+                        default=256)
+    parser.add_argument("--att_n_heads", type=int,
+                        help="The number of attention heads.",
+                        default=4)
+    parser.add_argument("--att_dropout", type=float,
+                        help="The dropout rate inside the attention layers.",
+                        default=0.1)
+
     parser.add_argument("--model_type", type=str,
                         help="The type of model you would like to use.",
                         default='relu',
                         choices=['relu', 'softmax', 'groupcomm',
-                                 'groupcomm_v2', 'causal'])
+                                 'groupcomm_v2', 'causal', 'attention'])
     return parser.parse_args()
