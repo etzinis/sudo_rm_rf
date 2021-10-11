@@ -11,14 +11,34 @@ Moreover, we also propose a convolutional architecture which is capable of captu
 
 [![YouTube sudo rm -rf presentation](http://img.youtube.com/vi/ftc0-tTf4O8/0.jpg)](https://www.youtube.com/watch?v=ftc0-tTf4O8 "sudo rm -rf presentation")
 
-You can find our paper here: https://arxiv.org/abs/2007.06833. Please wait for new updates on the presentation at MLSP 2020 https://ieeemlsp.cc/!
+You can find our paper here: https://arxiv.org/abs/2007.06833 alongside its journal extended version with experiments on FUSS and the new group communication variation of sudo rm -rf: https://arxiv.org/pdf/2103.02644.pdf.
+
+Please cite as:
+```BibTex
+@inproceedings{tzinis2020sudo,
+  title={Sudo rm-rf: Efficient networks for universal audio source separation},
+  author={Tzinis, Efthymios and Wang, Zhepei and Smaragdis, Paris},
+  booktitle={2020 IEEE 30th International Workshop on Machine Learning for Signal Processing (MLSP)},
+  pages={1--6},
+  year={2020},
+  organization={IEEE}
+}
+
+@article{tzinis2021compute,
+  title={Compute and memory efficient universal sound source separation},
+  author={Tzinis, Efthymios and Wang, Zhepei and Jiang, Xilin and Smaragdis, Paris},
+  journal={arXiv preprint arXiv:2103.02644},
+  year={2021}
+}
+```
 
 
 ## Table of contents
 
 - [Model complexity and results](#model-complexity-and-results)
 - [Sudo rm -rf architecture](#sudo-rm--rf-architecture)
-- [How to run](#how-to-run)
+- [Short - How to run the best models](#short-how-to-run-the-best-models)
+- [Extended - How to run previous versions](#extended-how-to-run-previous-versions)
 - [Copyright and license](#copyright-and-license)
 
 
@@ -27,6 +47,9 @@ You can find our paper here: https://arxiv.org/abs/2007.06833. Please wait for n
 As we discuss in the paper, our main objective is to find efficient architectures not only in terms of one metric but in terms of all metrics which might become a bottleneck during training or inference. This will facilitate the needs of users that do not have in their disposal (or use case) the considerable requirements that many modern models exhibit. This will enable people with no GPU access, or users with interest in edge applications to also make use of this model and not be locked out of good performance.
 
 We present here the results from our paper:
+
+![FUSS-results](images/fuss_results.png "Results on FUSS")
+Sudo -rm rf can score similarly to state-of-the-art models with much less parameters and computation time. Check the newest variation with group communication that brings down the number of parameters dramatically!
 
 ![ESC-50-results](images/Selection_061.png "ESC-50-results")
 SI-SDRi non-speech sound separation performance on ESC50 vs computational resources with an input audio of 8000 samples for all models. (Top row) computational requirements for a single forward pass on CPU (Bottom) for a backward pass on GPU. All x-axis are shown in log-scale while the 3 connected blue stars correspond to the three SuDoRM-RF configurations that we proposed. Namely, SuDoRM-RF 1.0x , SuDoRM-RF 0.5x , SuDoRM-RF 0.25x consist of 16, 8 and 4  U-ConvBlocks, respectively.
@@ -47,7 +70,27 @@ Specifically, the backbone structure of this convolutional network is the SUcces
 
 By repeating those blocks we are able to increase the receptive field of our network without needing dilated convolutions or recurrent connections which is more costly in terms of computational time and memory requirements.
 
-## How to run
+## (Short) How to run the best models
+
+1. Try an example run with Libri2Mix and the latest version of sudo rm rf with group commucation that brings down the parameters by a lot!
+```shell
+python run_sudormrf_gc_v2.py --train LIBRI2MIX --val LIBRI2MIX --test LIBRI2MIX --train_val LIBRI2MIX \
+--separation_task sep_clean --n_train 50800 --n_test 3000 --n_val 3000 --n_train_val 3000 \
+--out_channels 512 --in_channels 256 --enc_kernel_size 21 --num_blocks 16 -cad 0 -bs 3 --divide_lr_by 3. --upsampling_depth 5 \
+--patience 30 -fs 8000 -tags best_separation_model --project_name sudormrf_libri2mix --zero_pad --clip_grad_norm 5.0
+```
+
+2. Try to run the model on FUSS separation with up to 4 sources!
+```shell
+python run_fuss_separation.py --train FUSS  --n_channels 1 --n_train 20000 \
+--enc_kernel_size 41 --enc_num_basis 512 --out_channels 256 --in_channels 512 --num_blocks 16 \
+-cad 0 1 2 3 -bs 4 --divide_lr_by 3. -lr 0.001 --upsampling_depth 5 --divide_lr_by 3. \
+--patience 10 -fs 16000 -tags sudormrf groupcommv2  bl16 N512 L41 --project_name fuss_sudo \
+--zero_pad --clip_grad_norm 5.0 --model_type groupcomm_v2 --audio_timelength 10.
+```
+
+
+## (Extended) How to run previous versions
 
 1. Setup your cometml credentials and paths for datasets in the config file.
 ```shell
