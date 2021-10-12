@@ -187,5 +187,6 @@ def get_args():
                         help="The type of model you would like to use.",
                         default='relu',
                         choices=['relu', 'softmax', 'groupcomm',
-                                 'groupcomm_v2', 'causal', 'attention'])
+                                 'groupcomm_v2', 'causal',
+                                 'attention', 'sepformer'])
     return parser.parse_args()
