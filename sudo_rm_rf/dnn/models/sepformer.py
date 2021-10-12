@@ -1806,7 +1806,7 @@ class SepformerWrapper(nn.Module):
 
     def forward(self, mix):
 
-        mix_w = self.encoder(mix)
+        mix_w = self.encoder(mix[:, 0])
         est_mask = self.masknet(mix_w)
         mix_w = torch.stack([mix_w] * self.num_spks)
         sep_h = mix_w * est_mask
@@ -1821,14 +1821,14 @@ class SepformerWrapper(nn.Module):
         )
 
         # T changed after conv1d in encoder, fix it here
-        T_origin = mix.size(1)
+        T_origin = mix.size(-1)
         T_est = est_source.size(1)
         if T_origin > T_est:
             est_source = F.pad(est_source, (0, 0, 0, T_origin - T_est))
         else:
             est_source = est_source[:, :T_origin, :]
 
-        return est_source
+        return est_source.transpose(1, 2)
 
 
 if __name__ == "__main__":
@@ -1853,6 +1853,6 @@ if __name__ == "__main__":
         intra_norm_before=True,
         inter_norm_before=True,
     )
-    inp = torch.rand(1, 160)
+    inp = torch.rand(1, 1, 160)
     result = model.forward(inp)
-    result.shape
+    print(result.shape)
