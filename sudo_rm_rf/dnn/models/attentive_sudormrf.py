@@ -22,7 +22,7 @@ class _LayerNorm(nn.Module):
                                  requires_grad=True)
 
     def apply_gain_and_bias(self, normed_x):
-        """ Assumes input of size `[batch, chanel, *]`. """
+        """ Assumes input of size `[batch, channels, *]`. """
         return (self.gamma * normed_x.transpose(1, -1) +
                 self.beta).transpose(1, -1)
 
@@ -160,21 +160,37 @@ class MHANormLayer(nn.Module):
             bias=True, add_bias_kv=False,
             add_zero_attn=False, kdim=None, vdim=None, batch_first=True,
             device=None, dtype=None)
-        self.in_linear = nn.Linear(in_dim, att_dim)
+        # self.in_linear = nn.Linear(in_dim, att_dim)
         self.in_norm = GlobLN(att_dim)
-        self.out_norm = GlobLN(att_dim)
-        self.out_linear = nn.Linear(att_dim, in_dim)
+        self.out_norm1 = GlobLN(att_dim)
+        self.out_norm2 = GlobLN(in_dim)
+        # self.out_linear = nn.Linear(att_dim, in_dim)
         self.pos_enc = PositionalEncoding(
             d_model=att_dim, dropout=dropout, max_len=max_len)
         self.act = nn.PReLU()
 
     def forward(self, x):
+        # x.shape: batch_size, n_channels, time_samples
         x = self.in_linear(x.transpose(1, 2))
         x = self.pos_enc(x)
         x = self.in_norm(x.transpose(1, 2)).transpose(1, 2)
-        x = x + self.mha(query=x, key=x, value=x)[0]
-        x = self.out_norm(x.transpose(1, 2)).transpose(1, 2)
-        return self.act(self.out_linear(x).transpose(1, 2))
+        x = x + self.out_norm1(
+            self.mha(query=x,
+                     key=x,
+                     value=x)[0].transpose(1, 2)).transpose(1, 2)
+        return self.act(
+            self.out_norm2(self.out_linear(x).transpose(1, 2)))
+        # x = self.in_linear(x.transpose(1, 2))
+        # print(x.shape)
+        # x = self.pos_enc(x.transpose(1, 2))
+        # x = self.in_norm(x.transpose(1, 2)).transpose(1, 2)
+        # x = x + self.out_norm1(
+        #     self.mha(query=x,
+        #              key=x,
+        #              value=x)[0].transpose(1, 2)).transpose(1, 2)
+        # return self.act(self.out_norm2(x.transpose(1, 2)))
+        # x = self.out_norm(x.transpose(1, 2)).transpose(1, 2)
+        # return self.act(self.out_linear(x).transpose(1, 2))
 
 
 class PositionalEncoding(nn.Module):
@@ -320,9 +336,9 @@ class SuDORMRF(nn.Module):
             AttentiveUConvBlock(out_channels=out_channels,
                                 in_channels=in_channels,
                                 upsampling_depth=upsampling_depth,
-                                n_heads=4,
-                                att_dims=256,
-                                att_dropout=0.1)
+                                n_heads=n_heads,
+                                att_dims=att_dims,
+                                att_dropout=att_dropout)
             for _ in range(num_blocks)])
 
         mask_conv = nn.Conv1d(out_channels, num_sources * enc_num_basis, 1)
