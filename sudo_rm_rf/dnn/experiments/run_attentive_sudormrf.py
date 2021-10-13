@@ -28,6 +28,7 @@ import sudo_rm_rf.dnn.models.attentive_sudormrf as attentive_sudormrf
 import sudo_rm_rf.dnn.models.attentive_sudomrf_v2 as attentive_sudomrf_v2
 import sudo_rm_rf.dnn.utils.cometml_loss_report as cometml_report
 import sudo_rm_rf.dnn.utils.cometml_log_audio as cometml_audio_logger
+import sudo_rm_rf.dnn.models.sepformer as sepformer
 
 
 args = parser.get_args()
@@ -111,6 +112,31 @@ elif hparams['model_type'] == 'attention_v2':
                                         att_dims=hparams['att_dims'],
                                         att_dropout=hparams['att_dropout'],
                                         num_sources=hparams['n_sources'])
+elif hparams['model_type'] == 'sepformer':
+    dff = 2 ** 11
+    n_heads = 8
+    N_intra_inter = 4
+    model = sepformer.SepformerWrapper(
+        encoder_kernel_size=16,
+        encoder_in_nchannels=1,
+        encoder_out_nchannels=256,
+        masknet_chunksize=250,
+        masknet_numlayers=2,
+        masknet_norm="ln",
+        masknet_useextralinearlayer=False,
+        masknet_extraskipconnection=True,
+        masknet_numspks=2,
+        intra_numlayers=N_intra_inter,
+        inter_numlayers=N_intra_inter,
+        intra_nhead=n_heads,
+        inter_nhead=n_heads,
+        intra_dffn=dff,
+        inter_dffn=dff,
+        intra_use_positional=True,
+        inter_use_positional=True,
+        intra_norm_before=True,
+        inter_norm_before=True,
+    )
 else:
     raise ValueError('Invalid model: {}.'.format(hparams['model_type']))
 
