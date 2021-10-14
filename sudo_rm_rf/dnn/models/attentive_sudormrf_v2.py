@@ -179,7 +179,7 @@ class MHANormLayer(nn.Module):
 
 class PositionalEncoding(nn.Module):
 
-    def __init__(self, d_model, dropout=0.1, max_len=5000):
+    def __init__(self, d_model, dropout=0.1, max_len=3200):
         super(PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
 
@@ -194,6 +194,71 @@ class PositionalEncoding(nn.Module):
 
     def forward(self, x):
         return self.dropout(x + self.pe[:, :x.size(1), :])
+
+
+class MHAttentionLayer(nn.Module):
+    def __init__(self, emb_dim, d_model, n_heads, dropout=0.0):
+        super(MHAttentionLayer, self).__init__()
+        self.dropout = nn.Dropout(dropout)
+        self.Q_proj = nn.Linear(emb_dim, d_model * n_heads)
+        self.K_proj = nn.Linear(emb_dim, d_model * n_heads)
+        self.V_proj = nn.Linear(emb_dim, d_model * n_heads)
+        self.O_proj = nn.Linear(d_model * n_heads, emb_dim)
+        self.n_heads = n_heads
+        self.d_model = d_model
+        self.q_normalizer = 1. / math.sqrt(d_model)
+
+    def forward(self, Q, K, V):
+        """Implements the multihead softmax attention.
+        Arguments
+        ---------
+            Q: (batch_size, q_len, emb_dim)
+            K: (batch_size, kv_len, emb_dim)
+            V: (batch_size, kv_len, emb_dim)
+        """
+        bs, q_len, _ = Q.shape
+        _, kv_len, _ = K.shape
+
+        Q = self.q_normalizer * self.Q_proj(Q).view(
+            bs, q_len, self.n_heads, -1)
+        K = self.K_proj(K).view(bs, kv_len, self.n_heads, -1)
+        V = self.V_proj(V).view(bs, kv_len, self.n_heads, -1)
+
+        # Query-Key inner product per head
+        QK = torch.einsum("nlhd,nshd->nhls", Q, K)
+
+        # Compute the attention tensor over the values length
+        A = self.dropout(torch.softmax(QK, dim=-1))
+
+        # Compute the output tensor per head
+        V = torch.einsum("nhls,nshd->nlhd", A, V)
+        # V: (batch_size, q_len, n_heads, d_model)
+
+        return self.O_proj(V.reshape(bs, q_len, -1))
+
+
+class TransformerLayer(nn.Module):
+    def __init__(self, emb_dim, d_model, n_heads,
+                 dropout=0.1, max_len=5000):
+        super(TransformerLayer, self).__init__()
+        self.mha = MHAttentionLayer(
+            emb_dim, d_model, n_heads, dropout=0.0)
+        self.out_norm = GlobLN(emb_dim)
+        self.out_mha_norm = GlobLN(emb_dim)
+        self.ffn = ConvNormAct(emb_dim, emb_dim, 1, stride=1, groups=1)
+        self.pos_enc = PositionalEncoding(
+            d_model=emb_dim, dropout=dropout, max_len=max_len)
+
+    def forward(self, x):
+        # x has shape: (batch_size, n_channels, seq_len)
+        x = self.pos_enc(x.transpose(1, 2))
+        x = x + self.mha(Q=x, K=x, V=x)
+        # x has shape: (batch_size, seq_len, n_channels)
+        x = self.out_mha_norm(x.transpose(1, 2))
+        # x has shape: (batch_size, n_channels, seq_len)
+
+        # Apply the FFN layer
+        return self.out_norm(self.ffn(x) + x)
 
 
 class AttentiveUConvBlock(nn.Module):
@@ -237,10 +302,10 @@ class AttentiveUConvBlock(nn.Module):
         self.res_conv = nn.Conv1d(in_channels, out_channels, 1)
 
         # Attention layer
-        self.attention = MHANormLayer(in_dim=in_channels,
-                                      att_dim=att_dims,
-                                      num_heads=n_heads,
-                                      dropout=att_dropout)
+        self.attention = TransformerLayer(
+            in_channels, att_dims, n_heads,
+            dropout=att_dropout, max_len=5000
+        )
 
     def forward(self, x):
         '''
