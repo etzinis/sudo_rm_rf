@@ -26,6 +26,8 @@ import sudo_rm_rf.dnn.experiments.utils.mixture_consistency as \
 import sudo_rm_rf.dnn.models.improved_sudormrf as improved_sudormrf
 import sudo_rm_rf.dnn.models.attentive_sudormrf as attentive_sudormrf
 import sudo_rm_rf.dnn.models.attentive_sudormrf_v2 as attentive_sudomrf_v2
+import sudo_rm_rf.dnn.models.attentive_sudormrf_v3 as \
+    attentive_sudomrf_v3
 import sudo_rm_rf.dnn.utils.cometml_loss_report as cometml_report
 import sudo_rm_rf.dnn.utils.cometml_log_audio as cometml_audio_logger
 import sudo_rm_rf.dnn.models.sepformer as sepformer
@@ -103,6 +105,18 @@ elif hparams['model_type'] == 'attention':
                                         num_sources=hparams['n_sources'])
 elif hparams['model_type'] == 'attention_v2':
     model = attentive_sudomrf_v2.SuDORMRF(
+        out_channels=hparams['out_channels'],
+        in_channels=hparams['in_channels'],
+        num_blocks=hparams['num_blocks'],
+        upsampling_depth=hparams['upsampling_depth'],
+        enc_kernel_size=hparams['enc_kernel_size'],
+        enc_num_basis=hparams['enc_num_basis'],
+        n_heads=hparams['att_n_heads'],
+        att_dims=hparams['att_dims'],
+        att_dropout=hparams['att_dropout'],
+        num_sources=hparams['n_sources'])
+elif hparams['model_type'] == 'attention_v3':
+    model = attentive_sudomrf_v3.SuDORMRF(
         out_channels=hparams['out_channels'],
         in_channels=hparams['in_channels'],
         num_blocks=hparams['num_blocks'],

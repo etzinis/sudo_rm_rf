@@ -189,6 +189,6 @@ def get_args():
                         choices=['relu', 'softmax', 'groupcomm',
                                  'groupcomm_v2', 'causal',
                                  'attention', 'attention_v2',
-                                 'sepformer'])
+                                 'attention_v3', 'sepformer'])
 
     return parser.parse_args()
