@@ -312,7 +312,7 @@ class SuDORMRF(nn.Module):
                 [appropriate_shape[-1] + self.lcm - values_to_pad],
                 dtype=torch.float32)
             padded_x[..., :x.shape[-1]] = x
-            return padded_x
+            return padded_x.to(x.device)
         return x
 
     @staticmethod
