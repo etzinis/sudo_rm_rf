@@ -7,6 +7,7 @@
 
 import os
 import sys
+
 current_dir = os.path.dirname(os.path.abspath('__file__'))
 root_dir = os.path.abspath(os.path.join(current_dir, '../../../'))
 sys.path.append(root_dir)
@@ -15,17 +16,17 @@ from __config__ import API_KEY
 from comet_ml import Experiment
 
 import torch
+
 from torch.nn import functional as F
 from tqdm import tqdm
 from pprint import pprint
-import sudo_rm_rf.dnn.experiments.utils.improved_cmd_args_parser as parser
+import sudo_rm_rf.dnn.experiments.utils.improved_cmd_args_parser_v2 as parser
 import sudo_rm_rf.dnn.experiments.utils.dataset_setup as dataset_setup
 import sudo_rm_rf.dnn.losses.sisdr as sisdr_lib
 import sudo_rm_rf.dnn.models.improved_sudormrf as improved_sudormrf
 import sudo_rm_rf.dnn.models.sudormrf as initial_sudormrf
 import sudo_rm_rf.dnn.utils.cometml_loss_report as cometml_report
 import sudo_rm_rf.dnn.utils.cometml_log_audio as cometml_audio_logger
-
 
 args = parser.get_args()
 hparams = vars(args)
@@ -36,10 +37,16 @@ if hparams['separation_task'] == 'enh_single':
 else:
     hparams['n_sources'] = 2
 
+if hparams["checkpoints_path"] is not None:
+    if hparams["save_checkpoint_every"] <= 0:
+        raise ValueError("Expected a value greater than 0 for checkpoint "
+                         "storing.")
+    if not os.path.exists(hparams["checkpoints_path"]):
+        os.makedirs(hparams["checkpoints_path"])
+
 # if hparams["log_audio"]:
 audio_logger = cometml_audio_logger.AudioLogger(
     fs=hparams["fs"], bs=hparams["batch_size"], n_sources=hparams["n_sources"])
-
 
 experiment = Experiment(API_KEY, project_name=hparams["project_name"])
 experiment.log_parameters(hparams)
@@ -56,13 +63,13 @@ os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(
 
 back_loss_tr_loss_name, back_loss_tr_loss = (
     'tr_back_loss_SISDRi',
-    # sisdr_lib.PITLossWrapper(sisdr_lib.PairwiseNegSDR("sisdr"),
-    #                          pit_from='pw_mtx')
-    sisdr_lib.PermInvariantSISDR(batch_size=hparams['batch_size'],
-                                 n_sources=hparams['n_sources'],
-                                 zero_mean=True,
-                                 backward_loss=True,)
-                                 # improvement=True)
+    sisdr_lib.PITLossWrapper(sisdr_lib.PairwiseNegSDR("sisdr"),
+                             pit_from='pw_mtx')
+    # sisdr_lib.PermInvariantSISDR(batch_size=hparams['batch_size'],
+    #                              n_sources=hparams['n_sources'],
+    #                              zero_mean=True,
+    #                              backward_loss=True, )
+    # improvement=True)
 )
 
 val_losses = {}
@@ -82,16 +89,20 @@ if hparams['model_type'] == 'relu':
     model = improved_sudormrf.SuDORMRF(out_channels=hparams['out_channels'],
                                        in_channels=hparams['in_channels'],
                                        num_blocks=hparams['num_blocks'],
-                                       upsampling_depth=hparams['upsampling_depth'],
-                                       enc_kernel_size=hparams['enc_kernel_size'],
+                                       upsampling_depth=hparams[
+                                           'upsampling_depth'],
+                                       enc_kernel_size=hparams[
+                                           'enc_kernel_size'],
                                        enc_num_basis=hparams['enc_num_basis'],
                                        num_sources=hparams['n_sources'])
 elif hparams['model_type'] == 'softmax':
     model = initial_sudormrf.SuDORMRF(out_channels=hparams['out_channels'],
                                       in_channels=hparams['in_channels'],
                                       num_blocks=hparams['num_blocks'],
-                                      upsampling_depth=hparams['upsampling_depth'],
-                                      enc_kernel_size=hparams['enc_kernel_size'],
+                                      upsampling_depth=hparams[
+                                          'upsampling_depth'],
+                                      enc_kernel_size=hparams[
+                                          'enc_kernel_size'],
                                       enc_num_basis=hparams['enc_num_basis'],
                                       num_sources=hparams['n_sources'])
 else:
@@ -106,6 +117,8 @@ print('Trainable Parameters: {}'.format(numparams))
 
 model = torch.nn.DataParallel(model).cuda()
 opt = torch.optim.Adam(model.parameters(), lr=hparams['learning_rate'])
+
+
 # lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
 #     optimizer=opt, mode='max', factor=1. / hparams['divide_lr_by'],
 #     patience=hparams['patience'], verbose=True)
@@ -126,7 +139,8 @@ for i in range(hparams['n_epochs']):
     for loss_name in all_losses:
         res_dic[loss_name] = {'mean': 0., 'std': 0., 'acc': []}
     print("Improved Sudo-RM-RF: {} - {} || Epoch: {}/{}".format(
-        experiment.get_key(), experiment.get_tags(), i+1, hparams['n_epochs']))
+        experiment.get_key(), experiment.get_tags(), i + 1,
+        hparams['n_epochs']))
     model.train()
 
     for data in tqdm(generators['train'], desc='Training'):
@@ -152,8 +166,9 @@ for i in range(hparams['n_epochs']):
 
         rec_sources_wavs = model(m1wavs.unsqueeze(1))
 
-        l = back_loss_tr_loss(rec_sources_wavs,
-                              clean_wavs)
+        l = torch.clamp(
+            back_loss_tr_loss(rec_sources_wavs, clean_wavs),
+            min=-30., max=+30.)
         l.backward()
         if hparams['clip_grad_norm'] > 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(),
@@ -164,7 +179,8 @@ for i in range(hparams['n_epochs']):
     if hparams['patience'] > 0:
         if tr_step % hparams['patience'] == 0:
             new_lr = (hparams['learning_rate']
-                      / (hparams['divide_lr_by'] ** (tr_step // hparams['patience'])))
+                      / (hparams['divide_lr_by'] ** (
+                                tr_step // hparams['patience'])))
             print('Reducing Learning rate to: {}'.format(new_lr))
             for param_group in opt.param_groups:
                 param_group['lr'] = new_lr
@@ -201,3 +217,11 @@ for i in range(hparams['n_epochs']):
     for loss_name in res_dic:
         res_dic[loss_name]['acc'] = []
     pprint(res_dic)
+
+    if hparams["save_checkpoint_every"] > 0:
+        if tr_step % hparams["save_checkpoint_every"] == 0:
+            torch.save(
+                model.state_dict(),
+                os.path.join(hparams["checkpoints_path"],
+                             f"improved_sudo_epoch_{tr_step}"),
+            )

@@ -17,7 +17,7 @@ from comet_ml import Experiment
 import torch
 from tqdm import tqdm
 from pprint import pprint
-import sudo_rm_rf.dnn.experiments.utils.improved_cmd_args_parser as parser
+import sudo_rm_rf.dnn.experiments.utils.improved_cmd_args_parser_v2 as parser
 import sudo_rm_rf.dnn.experiments.utils.dataset_setup as dataset_setup
 import sudo_rm_rf.dnn.experiments.utils.mixture_consistency as mixture_consistency
 import sudo_rm_rf.dnn.losses.sisdr as sisdr_lib
@@ -34,6 +34,13 @@ if hparams['separation_task'] == 'enh_single':
     hparams['n_sources'] = 1
 else:
     hparams['n_sources'] = 2
+
+if hparams["checkpoints_path"] is not None:
+    if hparams["save_checkpoint_every"] <= 0:
+        raise ValueError("Expected a value greater than 0 for checkpoint "
+                         "storing.")
+    if not os.path.exists(hparams["checkpoints_path"]):
+        os.makedirs(hparams["checkpoints_path"])
 
 # if hparams["log_audio"]:
 audio_logger = cometml_audio_logger.AudioLogger(
@@ -147,8 +154,9 @@ for i in range(hparams['n_epochs']):
         rec_sources_wavs = mixture_consistency.apply(rec_sources_wavs,
                                                      m1wavs.unsqueeze(1))
 
-        l = back_loss_tr_loss(rec_sources_wavs,
-                              clean_wavs)
+        l = torch.clamp(
+            back_loss_tr_loss(rec_sources_wavs, clean_wavs),
+            min=-30., max=+30.)
         l.backward()
         if hparams['clip_grad_norm'] > 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(),
@@ -199,3 +207,11 @@ for i in range(hparams['n_epochs']):
     for loss_name in res_dic:
         res_dic[loss_name]['acc'] = []
     pprint(res_dic)
+
+    if hparams["save_checkpoint_every"] > 0:
+        if tr_step % hparams["save_checkpoint_every"] == 0:
+            torch.save(
+                model.state_dict(),
+                os.path.join(hparams["checkpoints_path"],
+                             f"gc_sudo_epoch_{tr_step}"),
+            )
