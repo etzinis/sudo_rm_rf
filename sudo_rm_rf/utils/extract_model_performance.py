@@ -167,7 +167,8 @@ def forward_pass(model, model_class,
         if mode == 'gpu':
             mixture, mixture_p = mixture.cuda(), mixture_p.cuda()
         now = time.time()
-        est_sources = model(mixture)
+        with torch.no_grad():
+            _ = model(mixture)
         total_time += time.time() - now
     avg_time = total_time / repeats
     print('Elapsed Time Forward {}: {} sec'.format(mode, avg_time))
