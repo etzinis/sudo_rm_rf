@@ -133,6 +133,12 @@ def get_args():
     parser.add_argument("-mlp", "--metrics_logs_path", type=str,
                         help="""Path for logging metrics.""",
                         default=None)
+    parser.add_argument("-clp", "--checkpoints_path", type=str,
+                        help="""Path for logging checkpoints.""",
+                        default=None)
+    parser.add_argument("--save_checkpoint_every", type=int,
+                        help="""Number of epochs between each model save.""",
+                        default=0)
     # ===============================================
     # Separation model (SuDO-RM-RF) params
     parser.add_argument("--out_channels", type=int,
