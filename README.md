@@ -27,8 +27,8 @@ Please cite as:
 @article{tzinis2021compute,
   title={Compute and memory efficient universal sound source separation},
   author={Tzinis, Efthymios and Wang, Zhepei and Jiang, Xilin and Smaragdis, Paris},
-  journal={arXiv preprint arXiv:2103.02644},
-  year={2021}
+  journal={Journal of Signal Processing Systems},
+  year={2021},
 }
 ```
 
