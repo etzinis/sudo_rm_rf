@@ -17,19 +17,19 @@ def get_args():
     parser.add_argument("--train", type=str, nargs='+',
                         help="Training dataset",
                         default=None,
-                        choices=['WHAM', 'LIBRI2MIX', 'MUSDB', 'FUSS'])
+                        choices=['WHAM', 'LIBRI2MIX', 'MUSDB', 'FUSS', 'WHAMR'])
     parser.add_argument("--val", type=str, nargs='+',
                         help="Validation dataset",
                         default=None,
-                        choices=['WHAM', 'LIBRI2MIX', 'MUSDB', 'FUSS'])
+                        choices=['WHAM', 'LIBRI2MIX', 'MUSDB', 'FUSS', 'WHAMR'])
     parser.add_argument("--test", type=str, nargs='+',
                         help="Test dataset",
                         default=None,
-                        choices=['WHAM', 'LIBRI2MIX', 'MUSDB', 'FUSS'])
+                        choices=['WHAM', 'LIBRI2MIX', 'MUSDB', 'FUSS', 'WHAMR'])
     parser.add_argument("--train_val", type=str, nargs='+',
                         help="Validation on the training data",
                         default=None,
-                        choices=['WHAM', 'LIBRI2MIX'])
+                        choices=['WHAM', 'LIBRI2MIX', 'WHAMR'])
     parser.add_argument("--n_train", type=int,
                         help="""Reduce the number of training 
                                 samples to this number.""", default=0)
@@ -82,7 +82,8 @@ def get_args():
                         default=None,
                         choices=['enhance_single_white_noise',
                                  'enhance_single', 'enhance_both',
-                                 'sep_clean', 'sep_noisy'])
+                                 'sep_clean', 'sep_noisy', 'noisy',
+                                 'noisy_reverberant'])
     # ===============================================
     # Training params
     parser.add_argument("-bs", "--batch_size", type=int,

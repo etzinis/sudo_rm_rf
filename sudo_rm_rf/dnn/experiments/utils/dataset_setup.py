@@ -5,9 +5,10 @@
 """
 
 from __config__ import WHAM_ROOT_PATH, LIBRI2MIX_ROOT_PATH, \
-    MUSDBWAV8K_ROOT_PATH, MUSDBWAV_ROOT_PATH, FUSS_ROOT_PATH
+    MUSDBWAV8K_ROOT_PATH, MUSDBWAV_ROOT_PATH, FUSS_ROOT_PATH, WHAMR_ROOT_PATH
 import sudo_rm_rf.dnn.dataset_loader.libri2mix as libri2mix
 import sudo_rm_rf.dnn.dataset_loader.wham as wham_loader
+import sudo_rm_rf.dnn.dataset_loader.whamr as whamr_loader
 import sudo_rm_rf.dnn.dataset_loader.fuss as fuss_loader
 import sudo_rm_rf.dnn.dataset_loader.musdb_dataset as \
     musdb_loader
@@ -28,6 +29,11 @@ def create_loader_for_simple_dataset(dataset_name=None,
     if dataset_name == 'WHAM':
         loader = wham_loader
         root_path = WHAM_ROOT_PATH
+        translator = {'train': 'tr', 'test': 'tt', 'val': 'cv'}
+        translated_split = translator[data_split]
+    elif dataset_name == 'WHAMR':
+        loader = whamr_loader
+        root_path = WHAMR_ROOT_PATH
         translator = {'train': 'tr', 'test': 'tt', 'val': 'cv'}
         translated_split = translator[data_split]
     elif dataset_name == 'FUSS':
