@@ -41,6 +41,7 @@ import sudo_rm_rf.dnn.models.improved_sudormrf as improved_sudormrf
 import sudo_rm_rf.dnn.models.groupcomm_sudormrf_v2 as sudormrf_gc_v2
 import sudo_rm_rf.dnn.models.sepformer as sepformer
 from speechbrain.pretrained import SepformerSeparation as sep_former_separator
+import sudo_rm_rf.dnn.experiments.utils.mixture_consistency as mixture_consistency
 
 # get all files for wham or whamr!
 whamr_test_folder_path = '/mnt/data/whamr/wav8k/min/tt'
@@ -68,13 +69,13 @@ chosen_mixture_path = os.path.join(whamr_test_folder_path, 'mix_clean_anechoic',
 print(get_tensors_for_chosen_file(chosen_mixture_path)[0].shape,
 get_tensors_for_chosen_file(chosen_mixture_path)[1].shape)
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 models_to_eval = [
-    # {
-    #     'model_path': '../../pretrained_models/GroupCom_Sudormrf_U8_Bases512_WSJ02mix.pt',
-    #     'is_sudo_model': True,
-    #     'test_dataset': "WSJ02mix",
-    # },
+    {
+        'model_path': '../../pretrained_models/GroupCom_Sudormrf_U8_Bases512_WSJ02mix.pt',
+        'is_sudo_model': True,
+        'test_dataset': "WSJ02mix",
+    },
     # {
     #     'model_path': '../../pretrained_models/Improved_Sudormrf_U16_Bases512_WSJ02mix.pt',
     #     'is_sudo_model': True,
@@ -85,11 +86,11 @@ models_to_eval = [
     #     'is_sudo_model': True,
     #     'test_dataset': "WSJ02mix",
     # },
-    {
-        'model_path': '../../pretrained_models/Improved_Sudormrf_U16_Bases2048_WHAMRexclmark.pt',
-        'is_sudo_model': True,
-        'test_dataset': "WHAMR!",
-    },
+    # {
+    #     'model_path': '../../pretrained_models/Improved_Sudormrf_U16_Bases2048_WHAMRexclmark.pt',
+    #     'is_sudo_model': True,
+    #     'test_dataset': "WHAMR!",
+    # },
     # {
     #     'model_path': '../../pretrained_models/Improved_Sudormrf_U36_Bases4096_WHAMRexclmark.pt',
     #     'is_sudo_model': True,
@@ -142,6 +143,10 @@ for model_info in models_to_eval:
             input_mix_mean = input_mix.mean(-1, keepdim=True)
             input_mix = (input_mix - input_mix_mean) / (input_mix_std + 1e-9)
             est_sources = model(input_mix.unsqueeze(1))
+
+            if "Group" in model_info['model_path']:
+                est_sources = mixture_consistency.apply(est_sources, input_mix.unsqueeze(1))
+
         else:
             est_sources = model(input_mix).permute(0, 2, 1)
 
