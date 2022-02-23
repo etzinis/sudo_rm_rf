@@ -35,7 +35,7 @@ Please cite as:
 
 ## Table of contents
 
-- [Pre-trained models and easy-to-use recipes]
+- [Pre-trained models and easy-to-use recipes](#pre-trained models and easy-to-use recipes)
 - [Model complexity and results](#model-complexity-and-results)
 - [Sudo rm -rf architecture](#sudo-rm--rf-architecture)
 - [Short - How to run the best models](#short-how-to-run-the-best-models)
@@ -69,6 +69,17 @@ rec_sources_wavs = separation_model(input_mix.unsqueeze(1))
 # Rescale the input sources with the mixture mean and variance
 rec_sources_wavs = (rec_sources_wavs * input_mix_std) + input_mix_mean
 ```
+
+One of the main points that sudo rm -rf models have brought forward is that focusing only on the reconstruction fidelity performance and ignoring all other computational metrics, such as: *execution time* and *actual memory consumption* is an ideal way of wasting resources for getting almost neglidgible performance improvement. To that end, we show that the Sudo rm -rf models can provide a very effective alternative for a range of separation tasks while also being respectful to users who do not have access to immense computational power or researchers who prefer not to train their models for weeks on a multitude of GPUs.
+
+|                     Results on WSJ0-2mix (anechoic 2-source separation)  |
+| |  | |  | Inference (GPU) ||  Training (GPU) || - | -  |
+| Model version | Batch <br> Size | U-Conv<br>Blocks | Number of <br> encoder  <br> bases | Time <br> (sec) | Mem <br> (GB) |  Time <br> (sec) | Mem <br> (GB) | #Params <br> ($ 10^6 $) | SI-SDRi <br> (dB) | 
+| :---          |    :----:   | :----:   |   :----:  |    :----:  | :----:   |   :----:  |    :----:  | :----:  | :----:  |
+|  Group Comm <br> *sudo rm-rf*  |  1 <br> 4 | 8 | 512 |  0.02 <br> 0.05 | 0.06 <br> 0.25 |  0.13 <br> 0.22 | 1.45 <br> 5.94 | 0.5 | -
+<!-- | Improved <br> *sudo rm -rf*   | 1 <br> 4  | 16          | 512     |  5 |
+| Improved <br> *sudo rm -rf*   | 1 <br> 2  | 36          | 2048    |  5 |
+| [Sepformer<br>(lit. SOTA)](https://arxiv.org/pdf/2202.02884.pdf) |    1 <br> 2 |  -    | 1024    |  5 |  -->
 
 ## Model complexity and results
 
