@@ -35,12 +35,62 @@ Please cite as:
 
 ## Table of contents
 
+- [Pre-trained models and easy-to-use recipes](#pre-trained models and easy-to-use recipes)
 - [Model complexity and results](#model-complexity-and-results)
 - [Sudo rm -rf architecture](#sudo-rm--rf-architecture)
 - [Short - How to run the best models](#short-how-to-run-the-best-models)
 - [Extended - How to run previous versions](#extended-how-to-run-previous-versions)
 - [Copyright and license](#copyright-and-license)
 
+
+## Pre-trained models and easy-to-use recipes
+You can find all the available pre-trained models below.
+| Training Data | Sudo rm -rf version | U-ConvBlocks | Number of encoder bases | Pre-trained model file |
+| :---          | :---          |    :----:   |   :----:  |    :----:  |
+| WSJ0-2mix     | Group Comm   |  8          | 512             |  [download](https://github.com/etzinis/sudo_rm_rf/blob/master/pretrained_models/GroupCom_Sudormrf_U8_Bases512_WSJ02mix.pt) |
+| WSJ0-2mix    | Improved     | 16          | 512     |  [download](https://github.com/etzinis/sudo_rm_rf/blob/master/pretrained_models/Improved_Sudormrf_U16_Bases512_WSJ02mix.pt) |
+| WSJ0-2mix    | Improved     | 36          | 2048     |  [download](https://github.com/etzinis/sudo_rm_rf/blob/master/pretrained_models/Improved_Sudormrf_U36_Bases2048_WSJ02mix.pt) |
+| WHAMR!    | Improved     | 16          | 2048     |  [download](https://github.com/etzinis/sudo_rm_rf/blob/master/pretrained_models/Improved_Sudormrf_U16_Bases2048_WHAMRexclmark.pt) |
+| WHAMR!    | Improved     | 36          | 4096     |  [download](https://github.com/etzinis/sudo_rm_rf/blob/master/pretrained_models/Improved_Sudormrf_U36_Bases4096_WHAMRexclmark.pt) |
+
+We have also prepared an easy to use example for the pre-trained sudo rm -rf models here [python-notebook](https://github.com/etzinis/sudo_rm_rf/blob/master/sudo_rm_rf/notebooks/sudormrf_how_to_use.ipynb) so you can take all models for a spin 🏎️.. Simply normalize the input audio and infer!
+```python
+# Load a pretrained model
+separation_model = torch.load(anechoic_model_p)
+
+# Normalize the waveform and apply the model
+input_mix_std = separation_model.std(-1, keepdim=True)
+input_mix_mean = separation_model.mean(-1, keepdim=True)
+input_mix = (separation_model - input_mix_mean) / (input_mix_std + 1e-9)
+
+# Apply the model
+rec_sources_wavs = separation_model(input_mix.unsqueeze(1))
+
+# Rescale the input sources with the mixture mean and variance
+rec_sources_wavs = (rec_sources_wavs * input_mix_std) + input_mix_mean
+```
+
+One of the main points that sudo rm -rf models have brought forward is that focusing only on the reconstruction fidelity performance and ignoring all other computational metrics, such as: *execution time* and *actual memory consumption* is an ideal way of wasting resources for getting almost neglidgible performance improvement. To that end, we show that the Sudo rm -rf models can provide a very effective alternative for a range of separation tasks while also being respectful to users who do not have access to immense computational power or researchers who prefer not to train their models for weeks on a multitude of GPUs.
+
+### Results on WSJ0-2mix (anechoic 2-source speech separation) 
+| Model version | Batch <br> Size | For. <br> CPU <br> (ex/sec) <br> ⬆️ | For. <br> GPU <br> (ex/sec) <br> ⬆️  |  For. <br> GPU <br> Mem. <br> (GB) <br> ⬇️ |  Back. <br> GPU <br> (ex/sec) <br> ⬆️  |  Back. <br> GPU <br> Mem. <br> (GB) <br> ⬇️   | #Params <br> (10^6) <br> ⬇️  | Mean <br> SI-SDRi <br> (dB)  <br> ⬆️ | 
+| :---          |    :----:   | :----:   |   :----:  |    :----:  | :----:   |   :----:  |    :----:  | :----:  |   
+|  Group Com <br> *sudo rm-rf* <br> 16 U-ConvBlocks <br> 512 enc. bases |  1 <br> 4 | 1.5 <br> **0.3** 🥇| **43.9** 🥇<br> **78.9** 🥇| **0.06** 🥇<br> **0.25** 🥇| **31.9** 🥇<br> **18.1** 🥇| **1.45**🥇 <br> **5.94**🥇 | **0.51** 🥇 | 13.1 |
+|  Improved <br> *sudo rm-rf* <br> 16 U-ConvBlocks <br> 512 enc. bases |  1 <br> 4 | **3.9**🥇 <br> 0.2 | 26.2 <br> 53.3 | 0.08 <br> **0.25**🥇 | 21.8 <br> 11.8 | 2.1 <br> 8.43 | 5.02 | 17.3 |
+|  Improved <br> *sudo rm-rf* <br> 36 U-ConvBlocks <br> 2048 enc. bases |  1 <br> 2 | 1.3 <br> OOM | 9.8 <br> OOM | 0.23 <br> OOM | 2.2 <br> OOM | 5.26 <br> OOM | 23.24 | 19.5 |
+|  [Sepformer<br>(literature SOTA)](https://arxiv.org/pdf/2202.02884.pdf) |  1 <br> 2 | 0.1 <br> OOM | 10.6 <br> OOM | 0.39 <br> OOM | 3.5 <br> OOM | 8.16 <br> OOM | 25.68 | **22.4** 🥇 |
+
+
+### Results on WHAMR! (noisy and reverberant 2-source speech separation) 
+| Model version | Batch <br> Size | For. <br> CPU <br> (ex/sec) <br> ⬆️ | For. <br> GPU <br> (ex/sec) <br> ⬆️  |  For. <br> GPU <br> Mem. <br> (GB) <br> ⬇️ |  Back. <br> GPU <br> (ex/sec) <br> ⬆️  |  Back. <br> GPU <br> Mem. <br> (GB) <br> ⬇️   | #Params <br> (10^6) <br> ⬇️  | Mean <br> SI-SDRi <br> (dB)  <br> ⬆️ | 
+| :---          |    :----:   | :----:   |   :----:  |    :----:  | :----:   |   :----:  |    :----:  | :----:  |   
+|  Improved <br> *sudo rm-rf* <br> 16 U-ConvBlocks <br> 2048 enc. bases |  1 <br> 4 | **3.3** 🥇 <br> **0.2** 🥇 | **26.2** 🥇 <br> **48.7** 🥇 | **0.16** 🥇 <br> **0.55** 🥇 | **21.3** 🥇 <br> **11.2** 🥇 | **2.44** 🥇 <br> **9.7** 🥇 | 6.36| 12.1 |
+|  Improved <br> *sudo rm-rf* <br> 36 U-ConvBlocks <br> 4096 enc. bases |  1 <br> 2 | 0.3 <br> OOM | 10.1 <br> OOM | 0.37 <br> OOM | 2.2 <br> OOM | 5.73 <br> OOM | 26.61 <br> OOM | **13.5** 🥇  |
+|  [Sepformer](https://arxiv.org/pdf/2202.02884.pdf) |  1 <br> 2 | 0.1 <br> OOM | 10.6 <br> OOM | 0.39 <br> OOM | 3.5 <br> OOM | 8.16 <br> OOM | 25.68 | 12.0 |
+|  [DPTNET - SRSSN](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9670704&casa_token=vhrs3lpffDUAAAAA:TBtuZZ84P58l8WaZx-L5uRNuwa_MmE0p72QKocH1h6_mqyHT7s5DS_iiyLmrg8djSmeRuStGTo0&tag=1) |  1 | - | - | - | - | - | **5.7** 🥇  | 12.3 |
+|  [Wavesplit<br>(previous SOTA)](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9670704&casa_token=vhrs3lpffDUAAAAA:TBtuZZ84P58l8WaZx-L5uRNuwa_MmE0p72QKocH1h6_mqyHT7s5DS_iiyLmrg8djSmeRuStGTo0&tag=1) |  1 | - | - | - | - | - | 29 | 13.2 |
+
+Thus, Sudo rm- rf models are able to perform adequately with SOTA and even surpass it in certain cases with minimal computational overhead in terms of both **time** and **memory**. Also, the importance of reporting all the above metrics when proposign a new model becomes apparent. We have conducted all the experiments assuming 8kHz sampling rate and 4 seconds of input audio on a server with an NVIDIA GeForce RTX 2080 Ti (11 GBs) and an 12-core Intel(R) Core(TM) i7-5930K CPU @ 3.50GHz. OOM means out of memory for the corresponding configuration. A value of **Z** ex/sec corresponds to the throughput of each model, in other words, for each second that passes, the model is is capable of processing (either forward or backward pass) **Z** 32,000 sampled audio files. The attention models, which undoubtly provide the best performance in most of the cases, are extremely heavy in terms of actual time and memory consumption (even if they appear that the number of parameters is rather small). They also become prohibitively expenssive for longer sequencies.
 
 ## Model complexity and results
 
