@@ -35,12 +35,40 @@ Please cite as:
 
 ## Table of contents
 
+- [Pre-trained models and easy-to-use recipes]
 - [Model complexity and results](#model-complexity-and-results)
 - [Sudo rm -rf architecture](#sudo-rm--rf-architecture)
 - [Short - How to run the best models](#short-how-to-run-the-best-models)
 - [Extended - How to run previous versions](#extended-how-to-run-previous-versions)
 - [Copyright and license](#copyright-and-license)
 
+
+## Pre-trained models and easy-to-use recipes
+You can find all the available pre-trained models below.
+| Training Data | Sudo rm -rf version | U-ConvBlocks | Number of encoder bases | Pre-trained model file |
+| :---          | :---          |    :----:   |   :----:  |    :----:  |
+| WSJ0-2mix     | Group Comm   |  8          | 512             |  [download](https://github.com/etzinis/sudo_rm_rf/blob/master/pretrained_models/GroupCom_Sudormrf_U8_Bases512_WSJ02mix.pt) |
+| WSJ0-2mix    | Improved     | 16          | 512     |  [download](https://github.com/etzinis/sudo_rm_rf/blob/master/pretrained_models/Improved_Sudormrf_U16_Bases512_WSJ02mix.pt) |
+| WSJ0-2mix    | Improved     | 36          | 2048     |  [download](https://github.com/etzinis/sudo_rm_rf/blob/master/pretrained_models/Improved_Sudormrf_U36_Bases2048_WSJ02mix.pt) |
+| WHAMR!    | Improved     | 16          | 2048     |  [download](https://github.com/etzinis/sudo_rm_rf/blob/master/pretrained_models/Improved_Sudormrf_U16_Bases2048_WHAMRexclmark.pt) |
+| WHAMR!    | Improved     | 36          | 4096     |  [download](https://github.com/etzinis/sudo_rm_rf/blob/master/pretrained_models/Improved_Sudormrf_U36_Bases4096_WHAMRexclmark.pt) |
+
+We have also prepared an easy to use example for the pre-trained sudo rm -rf models here [python-notebook](https://github.com/etzinis/sudo_rm_rf/blob/master/sudo_rm_rf/notebooks/sudormrf_how_to_use.ipynb). Simply normalize the input audio and infer!
+```python
+# Load a pretrained model
+separation_model = torch.load(anechoic_model_p)
+
+# Normalize the waveform and apply the model
+input_mix_std = separation_model.std(-1, keepdim=True)
+input_mix_mean = separation_model.mean(-1, keepdim=True)
+input_mix = (separation_model - input_mix_mean) / (input_mix_std + 1e-9)
+
+# Apply the model
+rec_sources_wavs = separation_model(input_mix.unsqueeze(1))
+
+# Rescale the input sources with the mixture mean and variance
+rec_sources_wavs = (rec_sources_wavs * input_mix_std) + input_mix_mean
+```
 
 ## Model complexity and results
 
