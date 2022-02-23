@@ -86,7 +86,6 @@ One of the main points that sudo rm -rf models have brought forward is that focu
 | :---          |    :----:   | :----:   |   :----:  |    :----:  | :----:   |   :----:  |    :----:  | :----:  |   
 |  Improved <br> *sudo rm-rf* <br> 16 U-ConvBlocks <br> 2048 enc. bases |  1 <br> 4 | **3.3** 🥇 <br> **0.2** 🥇 | **26.2** 🥇 <br> **48.7** 🥇 | **0.16** 🥇 <br> **0.55** 🥇 | **21.3** 🥇 <br> **11.2** 🥇 | **2.44** 🥇 <br> **9.7** 🥇 | 6.36| 12.1 |
 |  Improved <br> *sudo rm-rf* <br> 36 U-ConvBlocks <br> 4096 enc. bases |  1 <br> 2 | 0.3 <br> OOM | 10.1 <br> OOM | 0.37 <br> OOM | 2.2 <br> OOM | 5.73 <br> OOM | 26.61 <br> OOM | **13.5** 🥇  |
-|  [Sepformer](https://arxiv.org/pdf/2202.02884.pdf) |  1 <br> 2 | 0.1 <br> OOM | 10.6 <br> OOM | 0.39 <br> OOM | 3.5 <br> OOM | 8.16 <br> OOM | 25.68 | 12.0 |
 |  [DPTNET - SRSSN](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9670704&casa_token=vhrs3lpffDUAAAAA:TBtuZZ84P58l8WaZx-L5uRNuwa_MmE0p72QKocH1h6_mqyHT7s5DS_iiyLmrg8djSmeRuStGTo0&tag=1) |  1 | - | - | - | - | - | **5.7** 🥇  | 12.3 |
 |  [Wavesplit<br>(previous SOTA)](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9670704&casa_token=vhrs3lpffDUAAAAA:TBtuZZ84P58l8WaZx-L5uRNuwa_MmE0p72QKocH1h6_mqyHT7s5DS_iiyLmrg8djSmeRuStGTo0&tag=1) |  1 | - | - | - | - | - | 29 | 13.2 |
 
