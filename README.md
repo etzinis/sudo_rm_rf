@@ -47,11 +47,17 @@ Please cite as:
 You can find all the available pre-trained models below.
 | Training Data | Sudo rm -rf version | U-ConvBlocks | Number of encoder bases | Pre-trained model file |
 | :---          | :---          |    :----:   |   :----:  |    :----:  |
-| WSJ0-2mix     | Group Comm   |  8          | 512             |  [download](https://github.com/etzinis/sudo_rm_rf/blob/master/pretrained_models/GroupCom_Sudormrf_U8_Bases512_WSJ02mix.pt) |
-| WSJ0-2mix    | Improved     | 16          | 512     |  [download](https://github.com/etzinis/sudo_rm_rf/blob/master/pretrained_models/Improved_Sudormrf_U16_Bases512_WSJ02mix.pt) |
-| WSJ0-2mix    | Improved     | 36          | 2048     |  [download](https://github.com/etzinis/sudo_rm_rf/blob/master/pretrained_models/Improved_Sudormrf_U36_Bases2048_WSJ02mix.pt) |
-| WHAMR!    | Improved     | 16          | 2048     |  [download](https://github.com/etzinis/sudo_rm_rf/blob/master/pretrained_models/Improved_Sudormrf_U16_Bases2048_WHAMRexclmark.pt) |
-| WHAMR!    | Improved     | 36          | 4096     |  [download](https://github.com/etzinis/sudo_rm_rf/blob/master/pretrained_models/Improved_Sudormrf_U36_Bases4096_WHAMRexclmark.pt) |
+| WSJ0-2mix     | Group Comm   |  8          | 512             |  [download](https://zenodo.org/api/files/03fc1f83-3638-45e6-ae10-fbab4cf7ebd4/GroupCom_Sudormrf_U8_Bases512_WSJ02mix.pt) |
+| WSJ0-2mix    | Improved     | 16          | 512     |  [download](https://zenodo.org/api/files/03fc1f83-3638-45e6-ae10-fbab4cf7ebd4/Improved_Sudormrf_U16_Bases512_WSJ02mix.pt) |
+| WSJ0-2mix    | Improved     | 36          | 2048     |  [download](https://zenodo.org/api/files/03fc1f83-3638-45e6-ae10-fbab4cf7ebd4/Improved_Sudormrf_U36_Bases2048_WSJ02mix.pt) |
+| WHAMR!    | Improved     | 16          | 2048     |  [download](https://zenodo.org/api/files/03fc1f83-3638-45e6-ae10-fbab4cf7ebd4/Improved_Sudormrf_U16_Bases2048_WHAMRexclmark.pt) |
+| WHAMR!    | Improved     | 36          | 4096     |  [download](https://zenodo.org/api/files/03fc1f83-3638-45e6-ae10-fbab4cf7ebd4/Improved_Sudormrf_U36_Bases4096_WHAMRexclmark.pt) |
+
+Because of issues with git-LFS it would be much easier to download all the pre-trained models from zenodo and place them in the corresponding pretrained directory using the following command.
+```bash
+pwd
+rsync
+```
 
 We have also prepared an easy to use example for the pre-trained sudo rm -rf models here [python-notebook](https://github.com/etzinis/sudo_rm_rf/blob/master/sudo_rm_rf/notebooks/sudormrf_how_to_use.ipynb) so you can take all models for a spin 🏎️.. Simply normalize the input audio and infer!
 ```python
