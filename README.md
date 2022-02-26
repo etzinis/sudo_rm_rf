@@ -53,10 +53,12 @@ You can find all the available pre-trained models below.
 | WHAMR!    | Improved     | 16          | 2048     |  [download](https://zenodo.org/api/files/03fc1f83-3638-45e6-ae10-fbab4cf7ebd4/Improved_Sudormrf_U16_Bases2048_WHAMRexclmark.pt) |
 | WHAMR!    | Improved     | 36          | 4096     |  [download](https://zenodo.org/api/files/03fc1f83-3638-45e6-ae10-fbab4cf7ebd4/Improved_Sudormrf_U36_Bases4096_WHAMRexclmark.pt) |
 
-Because of issues with git-LFS it would be much easier to download all the pre-trained models from zenodo and place them in the corresponding pretrained directory using the following command.
+Because of issues with git-LFS it would be much easier to download all the pre-trained models from zenodo [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6299852.svg)](https://doi.org/10.5281/zenodo.6299852)
+ and place them in the corresponding pretrained directory using the following command.
 ```bash
-pwd
-rsync
+➜  pretrained_models git:(master) ✗ pwd
+/home/thymios/projects/sudo_rm_rf/pretrained_models
+➜  pretrained_models git:(master) ✗ bash download_pretrained_models.sh
 ```
 
 We have also prepared an easy to use example for the pre-trained sudo rm -rf models here [python-notebook](https://github.com/etzinis/sudo_rm_rf/blob/master/sudo_rm_rf/notebooks/sudormrf_how_to_use.ipynb) so you can take all models for a spin 🏎️.. Simply normalize the input audio and infer!
