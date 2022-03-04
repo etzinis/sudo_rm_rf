@@ -24,11 +24,15 @@ Please cite as:
   organization={IEEE}
 }
 
-@article{tzinis2021compute,
-  title={Compute and memory efficient universal sound source separation},
+@article{tzinis2022compute,
+  title={Compute and Memory Efficient Universal Sound Source Separation},
   author={Tzinis, Efthymios and Wang, Zhepei and Jiang, Xilin and Smaragdis, Paris},
   journal={Journal of Signal Processing Systems},
-  year={2021},
+  year={2022},
+  volume={94},
+  number={2},
+  pages={245--259},
+  publisher={Springer}
 }
 ```
 
