@@ -144,10 +144,7 @@ class CausalSuDORMRF(nn.Module):
             'Be mindful to signal processing and choose an odd number for '
             'your filter size, since the hop size is going to be an even '
             'number.')
-        self.lcm = abs(self.enc_kernel_size // 2 * 2 **
-                       self.upsampling_depth) // math.gcd(
-                       self.enc_kernel_size // 2,
-                       2 ** self.upsampling_depth)
+        self.n_least_samples_req = self.enc_kernel_size // 2 * 2 ** self.upsampling_depth
 
         # Front end
         self.encoder = ScaledWSConv1d(in_channels=in_audio_channels,
@@ -217,16 +214,17 @@ class CausalSuDORMRF(nn.Module):
         return self.remove_trailing_zeros(estimated_waveforms, input_wav)
 
     def pad_to_appropriate_length(self, x):
-        values_to_pad = int(x.shape[-1]) % self.lcm
-        if values_to_pad:
-            appropriate_shape = x.shape
-            padded_x = torch.zeros(
-                list(appropriate_shape[:-1]) +
-                [appropriate_shape[-1] + self.lcm - values_to_pad],
-                dtype=torch.float32)
-            padded_x[..., :x.shape[-1]] = x
-            return padded_x.to(x.device)
-        return x
+        input_length = x.shape[-1]
+        if input_length < self.n_least_samples_req:
+            values_to_pad = self.n_least_samples_req
+        else:
+            res = 1 if input_length % self.n_least_samples_req else 0
+            least_number_of_pads = input_length // self.n_least_samples_req
+            values_to_pad = (least_number_of_pads + res) * self.n_least_samples_req
+
+        padded_x = torch.zeros(list(x.shape[:-1]) + [values_to_pad], dtype=torch.float32)
+        padded_x[..., :x.shape[-1]] = x
+        return padded_x.to(x.device)
 
     @staticmethod
     def remove_trailing_zeros(padded_x, initial_x):
