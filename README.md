@@ -70,16 +70,44 @@ We have also prepared an easy to use example for the pre-trained sudo rm -rf mod
 # Load a pretrained model
 separation_model = torch.load(anechoic_model_p)
 
+anechoic_separation_model_config = os.path.basename(anechoic_model_p)
+type_of_model = anechoic_separation_model_config.split('_')[0]
+
+if type_of_model == "Improved":
+    model = improved_sudormrf.SuDORMRF(
+            out_channels=anechoic_separation_model.out_channels,
+            in_channels=anechoic_separation_model.in_channels,
+            num_blocks=anechoic_separation_model.num_blocks,
+            upsampling_depth=anechoic_separation_model.upsampling_depth,
+            enc_kernel_size=anechoic_separation_model.enc_kernel_size,
+            enc_num_basis=anechoic_separation_model.enc_num_basis,
+            num_sources=anechoic_separation_model.num_sources,)
+else:
+    model = sudormrf_gc_v2.GroupCommSudoRmRf(
+            out_channels=anechoic_separation_model.out_channels,
+            in_channels=anechoic_separation_model.in_channels,
+            num_blocks=anechoic_separation_model.num_blocks,
+            upsampling_depth=anechoic_separation_model.upsampling_depth,
+            enc_kernel_size=anechoic_separation_model.enc_kernel_size,
+            enc_num_basis=anechoic_separation_model.enc_num_basis,
+            num_sources=anechoic_separation_model.num_sources,)
+model.load_state_dict(anechoic_separation_model.state_dict())
+
 # Normalize the waveform and apply the model
 input_mix_std = separation_model.std(-1, keepdim=True)
 input_mix_mean = separation_model.mean(-1, keepdim=True)
 input_mix = (separation_model - input_mix_mean) / (input_mix_std + 1e-9)
 
 # Apply the model
-rec_sources_wavs = separation_model(input_mix.unsqueeze(1))
+rec_sources_wavs = model(input_mix.unsqueeze(1))
 
 # Rescale the input sources with the mixture mean and variance
 rec_sources_wavs = (rec_sources_wavs * input_mix_std) + input_mix_mean
+
+# In case you are using the pre-trained models with Group communication
+# please also use the mixture consistency right after the estimated waveforms
+if "GroupCom" in anechoic_model_p:
+    rec_sources_wavs = mixture_consistency.apply(rec_sources_wavs, input_mix.unsqueeze(1))
 ```
 
 One of the main points that sudo rm -rf models have brought forward is that focusing only on the reconstruction fidelity performance and ignoring all other computational metrics, such as: *execution time* and *actual memory consumption* is an ideal way of wasting resources for getting almost neglidgible performance improvement. To that end, we show that the Sudo rm -rf models can provide a very effective alternative for a range of separation tasks while also being respectful to users who do not have access to immense computational power or researchers who prefer not to train their models for weeks on a multitude of GPUs.
