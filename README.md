@@ -39,7 +39,7 @@ Please cite as:
 
 ## Table of contents
 
-- [Pre-trained models and easy-to-use recipes](#pre-trained models and easy-to-use recipes)
+- [Pre-trained models and easy-to-use recipes](#pre-trained-models-and-easy-to-use-recipes)
 - [Model complexity and results](#model-complexity-and-results)
 - [Sudo rm -rf architecture](#sudo-rm--rf-architecture)
 - [Short - How to run the best models](#short-how-to-run-the-best-models)
