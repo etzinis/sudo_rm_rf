@@ -67,6 +67,10 @@ Because of issues with git-LFS it would be much easier to download all the pre-t
 
 We have also prepared an easy to use example for the pre-trained sudo rm -rf models here [python-notebook](https://github.com/etzinis/sudo_rm_rf/blob/master/sudo_rm_rf/notebooks/sudormrf_how_to_use.ipynb) so you can take all models for a spin 🏎️.. Simply normalize the input audio and infer!
 ```python
+import sudo_rm_rf.dnn.experiments.utils.mixture_consistency as mixture_consistency
+import sudo_rm_rf.dnn.models.improved_sudormrf as improved_sudormrf
+import sudo_rm_rf.dnn.models.groupcomm_sudormrf_v2 as sudormrf_gc_v2
+
 # Load a pretrained model
 separation_model = torch.load(anechoic_model_p)
 
