@@ -1,4 +1,4 @@
-numpy==1.17.2
+numpy==1.22.0
 librosa==0.7.2
 scipy==1.4.1
 comet_ml==1.0.56
